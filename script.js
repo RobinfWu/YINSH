@@ -16,7 +16,13 @@ document.addEventListener("DOMContentLoaded", function() {
     let markers = [];
     let turnCount = 1; // Initialize turn counter
     let markerSequences = []; // Stores sequences of 5 or more markers
+    let clickableMarkers = [];
+    let selectMarkerState = false;
+    let removeRingState = false;
+    let playerToRemoveRing = null; // This will be set to 1 for white or -1 for black
+    let score = { white: 0, black: 0 };
     let outcome = ''
+    let gameOver = false;
 
     // Function to update the turn count display
     function updateTurnDisplay() {
@@ -69,19 +75,24 @@ document.addEventListener("DOMContentLoaded", function() {
             ringColor = ringNumber > 0 ? 'white' : 'black'; // White for positive numbers, black for negative
         }
 
-        if (isHovering && rings.length >= 10) {
-            // Set color for the filled circle based on the current player
-            ctx.fillStyle = currentPlayer === 1 ? 'white' : 'black';
-            ctx.beginPath();
-            ctx.arc(cx, cy, 6 * radius, 0, Math.PI * 2);
-            ctx.fill();
+        // Adjust hover effect condition
+        if (isHovering && !selectMarkerState && !removeRingState) {
+            // This checks if we're not in a state of selecting a marker or removing a ring
+            let isPlayerRing = (currentPlayer === 1 && ringNumber > 0) || (currentPlayer === -1 && ringNumber < 0);
+            if (isPlayerRing) {
+                // Set color for the filled circle based on the current player
+                ctx.fillStyle = currentPlayer === 1 ? 'white' : 'black';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 6 * radius, 0, Math.PI * 2);
+                ctx.fill();
 
-            // Draw the thin blue border
-            ctx.strokeStyle = 'blue';
-            ctx.lineWidth = 2;
-            ctx.stroke();
+                // Draw the thin blue border
+                ctx.strokeStyle = 'blue';
+                ctx.lineWidth = 2;
+                ctx.stroke();
 
-            return; // Skip drawing the rest if it's just a hover effect
+                return; // Skip drawing the rest if it's just a hover effect
+            }
         }
 
         // First draw the black border
@@ -125,11 +136,23 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         });
 
+       possibleMoves.forEach(move => {
+            const moveX = move[1] * cellSizeWidth + offsetX;
+            const moveY = move[0] * cellSizeHeight + offsetY;
+            if (isWithinCircle(mouseX, mouseY, moveX, moveY, radius)) {
+                hoverPos = { x: moveX, y: moveY, isPotentialMove: true };
+            }
+        });
+
         drawGrid(); // Redraw the grid
     }
 
     // Function to handle mouse moves
     function onMouseMove(event) {
+        if (gameOver) {
+            console.log("Game over. No further interactions allowed.");
+            return;
+        }
         const rect = canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
@@ -239,8 +262,9 @@ document.addEventListener("DOMContentLoaded", function() {
             ctx.arc(marker.x, marker.y, 6 * radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Draw the thin blue border
-            ctx.strokeStyle = 'blue';
+            // Draw the thin border (blue for regular, red for clickable)
+            const isClickable = clickableMarkers.some(cm => cm.row === marker.row && cm.col === marker.col);
+            ctx.strokeStyle = isClickable ? 'red' : 'blue';
             ctx.lineWidth = 2;
             ctx.stroke();
         });
@@ -250,10 +274,53 @@ document.addEventListener("DOMContentLoaded", function() {
             drawRing(ring.x, ring.y, ring.number, false);
         });
 
-        // Draw the hover effect
-        if (hoverPos) {
-            drawRing(hoverPos.x, hoverPos.y, 0, true);
+        // Highlight rings for removal if in remove ring state
+        if (removeRingState) {
+            rings.forEach(ring => {
+                if (ring.number > 0 && playerToRemoveRing  === 1 || ring.number < 0 && playerToRemoveRing  === -1) {
+                    // Draw a red border around the ring
+                    ctx.strokeStyle = 'red';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(ring.x, ring.y, radius + 3, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            });
         }
+
+        // Draw the hover effect for potential moves
+        if (hoverPos && hoverPos.isPotentialMove) {
+            // First draw the black border
+            ctx.beginPath();
+            ctx.arc(hoverPos.x, hoverPos.y, 8 * radius + 3, 0, Math.PI * 2); // The border circle is slightly larger
+            ctx.strokeStyle = 'black'; // Color for the border
+            ctx.lineWidth = 2; // Width of the border
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(hoverPos.x, hoverPos.y, 8 * radius - 3, 0, Math.PI * 2); // The border circle is slightly smaller
+            ctx.strokeStyle = 'black'; // Color for the border
+            ctx.lineWidth = 2; // Width of the border
+            ctx.stroke();
+
+            // Draw grey ring around the potential move position
+            ctx.beginPath();
+            ctx.arc(hoverPos.x, hoverPos.y, 8 * radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'grey';  // Permanent rings in white, hover effect in grey
+            ctx.lineWidth = 6;
+            ctx.stroke();
+        } else {
+            // Draw the hover effect
+            if (hoverPos) {
+                let ringNumberAtHover = internalBoard[hoverPos.row][hoverPos.col];
+                if (ringNumberAtHover != 0 && !selectMarkerState) {
+                    drawRing(hoverPos.x, hoverPos.y, ringNumberAtHover, true);
+                } else if (turnCount <= 10) {
+                    drawRing(hoverPos.x, hoverPos.y, 0, true);
+                }
+            }
+        }
+
     }
 
     function getCursorPosition(canvas, event) {
@@ -273,9 +340,100 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         if (selectedRing) {
+            printBoard()
             moveRing(adjustedRow, adjustedColumn);
-        } else {
+        } else if (removeRingState === false){
             selectRing(adjustedRow, adjustedColumn);
+            checkForMarkerRemoval(adjustedRow, adjustedColumn);
+        }
+
+        if (removeRingState) {
+            // Only allow ring removal in this state
+            removeRingIfClicked(adjustedRow, adjustedColumn);
+        }
+    }
+
+    function removeRingIfClicked(row, col) {
+        let playerColor = currentPlayer === 1 ? 'white' : 'black';
+
+        let ringIndex = rings.findIndex(ring => {
+            let ringRow = Math.floor(ring.y / cellSizeHeight);
+            let ringCol = Math.floor(ring.x / cellSizeWidth);
+            return ringRow === row && ringCol === col;
+        });
+
+        if (ringIndex !== -1) {
+            let ring = rings[ringIndex];
+            if ((ring.number > 0 && playerToRemoveRing === 1) || (ring.number < 0 && playerToRemoveRing === -1)) {
+                // Remove the ring from the internal board
+                internalBoard[row][col] = 0;
+
+                // Remove the ring and update score
+                rings.splice(ringIndex, 1);
+                score[playerToRemoveRing === 1 ? 'white' : 'black']++;
+                console.log(score)
+
+                if (playerToRemoveRing == currentPlayer) {
+                    currentPlayer *= -1;
+                }
+
+                // Reset the state and switch turns
+                selectMarkerState = false;
+                removeRingState = false;
+                playerToRemoveRing = null;
+
+                // Check for winning score
+                if (score.white === 3 || score.black === 3) {
+                    let winner = score.white === 1 ? "White" : "Black";
+                    outcome = winner + " wins the game!";
+                    updateOutcomeDisplay();
+                    gameOver = true; // Set the game over state
+                }
+
+                drawGrid();
+            }
+        }
+        if (!gameOver) {
+            printBoard();
+        }
+    }
+
+    function checkForMarkerRemoval(row, col) {
+        // Check if the clicked position is a clickable marker
+        if (clickableMarkers.some(marker => marker.row === row && marker.col === col)) {
+            removeMarkerSequence(row, col);
+        }
+    }
+
+    function removeMarkerSequence(row, col) {
+        // Find the sequence that contains the clicked marker
+        let sequenceToRemove = markerSequences.find(sequence =>
+            sequence.some(marker => marker.row === row && marker.col === col)
+        );
+
+        // Remove markers from the sequence
+        if (sequenceToRemove) {
+            let scoredMarkerColor = sequenceToRemove[0].color;
+
+            let clickedIndex = sequenceToRemove.findIndex(marker => marker.row === row && marker.col === col);
+            let startIndex = Math.max(clickedIndex - 2, 0);
+            let endIndex = Math.min(clickedIndex + 2, sequenceToRemove.length - 1);
+
+            for (let i = startIndex; i <= endIndex; i++) {
+                let marker = sequenceToRemove[i];
+                internalBoard[marker.row][marker.col] = 0; // Remove marker from board
+                markers = markers.filter(m => !(m.row === marker.row && m.col === marker.col));
+            }
+            clickableMarkers = []; // Clear the clickable markers
+            // Set the turn to the player whose markers were not just scored
+            currentPlayer = scoredMarkerColor === 'white' ? -1 : 1;
+
+            // Determine the player who needs to remove a ring
+            playerToRemoveRing = scoredMarkerColor === 'white' ? 1 : -1;
+
+            selectMarkerState = false;
+            removeRingState = true;
+            drawGrid(); // Redraw the grid
         }
     }
 
@@ -310,6 +468,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function checkForMarkerSequences() {
         markerSequences = []; // Reset previous sequences
+        clickableMarkers = []; // Reset clickable markers
+
         const allPaths = [...verticalLists, ...diagonalLists, ...antiDiagonalLists];
 
         allPaths.forEach(path => {
@@ -320,12 +480,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 const marker = internalBoard[row][col];
                 if (marker === 1 || marker === -1) {
                     if (marker === lastMarker) {
-                        currentSequence.push({ row, col });
+                        currentSequence.push({ row, col, color: marker === 1 ? 'white' : 'black' });
                     } else {
                         if (currentSequence.length >= 5) {
                             markerSequences.push([...currentSequence]);
                         }
-                        currentSequence = [{ row, col }];
+                        currentSequence = [{ row, col, color: marker === 1 ? 'white' : 'black' }];
                     }
                     lastMarker = marker;
                 } else {
@@ -342,6 +502,30 @@ document.addEventListener("DOMContentLoaded", function() {
                 markerSequences.push([...currentSequence]);
             }
         });
+        // Identify clickable markers in each sequence
+        markerSequences.forEach(sequence => {
+            let len = sequence.length;
+            if (len % 2 === 0) { // Even length
+                let middleIndex1 = len / 2 - 1;
+                let middleIndex2 = len / 2;
+                clickableMarkers.push(sequence[middleIndex1], sequence[middleIndex2]);
+            } else { // Odd length
+                let middleIndex = Math.floor(len / 2);
+                clickableMarkers.push(sequence[middleIndex]);
+            }
+        });
+        if (markerSequences.length > 0) {
+            selectMarkerState = true; // Set the state to select marker
+//
+//            // Check the color of the markers in the sequences
+//            let playerColor = currentPlayer === 1 ? 'white' : 'black';
+//            let scoredOpponent = markerSequences.some(sequence => sequence[0].color !== playerColor);
+//
+//            // If the player scored for the opponent, switch turns
+//            if (scoredOpponent) {
+//                currentPlayer *= -1;
+//            }
+        }
     }
 
     function moveRing(newRow, newCol) {
@@ -362,7 +546,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         // Place a marker at the original ring position
-        let markerPosition = { x: selectedRing.col * cellSizeWidth + offsetX, y: selectedRing.row * cellSizeHeight + offsetY, color: currentPlayer === 1 ? 'white' : 'black' };
+        let markerPosition = { x: selectedRing.col * cellSizeWidth + offsetX, y: selectedRing.row * cellSizeHeight + offsetY, row: selectedRing.row, col: selectedRing.col, color: currentPlayer === 1 ? 'white' : 'black' };
         markers.push(markerPosition);
 
         // Add the ring to the new position
@@ -379,9 +563,17 @@ document.addEventListener("DOMContentLoaded", function() {
         turnCount++; // Increment turn count
         updateTurnDisplay(); // Update the display
         checkForMarkerSequences();
+
         if (markers.length == 51) {
-            outcome = 'Outcome: A Tie. All 51 markers are used up.'
+            if (score.white > score.black) {
+                outcome = 'Outcome: White wins. All 51 markers are used up.';
+            } else if (score.black > score.white) {
+                outcome = 'Outcome: Black wins. All 51 markers are used up.';
+            } else {
+                outcome = 'Outcome: A Tie. All 51 markers are used up.';
+            }
             updateOutcomeDisplay();
+            gameOver = true;
         }
         // Redraw the grid with the updated positions
         drawGrid();
@@ -403,7 +595,8 @@ document.addEventListener("DOMContentLoaded", function() {
         // Count the number of rings already placed
         let totalRingsPlaced = rings.length;
 
-        if (internalBoard[row] && internalBoard[row][col] === 0 && rings.length < 10) {
+        // Check if it's within the first ten turns and the selected spot is empty
+        if (turnCount <= 10 && internalBoard[row] && internalBoard[row][col] === 0) {
             internalBoard[row][col] = ringCounter[currentPlayer];
             rings.push({ x: col * cellSizeWidth + offsetX, y: row * cellSizeHeight + offsetY, number: ringCounter[currentPlayer] });
             ringCounter[currentPlayer] += currentPlayer; // Increment or decrement the ring number
@@ -411,6 +604,8 @@ document.addEventListener("DOMContentLoaded", function() {
             turnCount++; // Increment turn count
             updateTurnDisplay(); // Update the display
             drawGrid(); // Redraw the grid with the new ring
+        } else if (turnCount > 10) {
+            console.log("Rings can no longer be placed. Move existing rings.");
         } else if (totalRingsPlaced >= 10) {
             console.log("All rings placed. No further placement allowed.");
         }
@@ -419,21 +614,48 @@ document.addEventListener("DOMContentLoaded", function() {
     // Function to print the board to the console
     function printBoard() {
         internalBoard.forEach(row => {
-            console.log(row.join(' '));
+            let formattedRow = '';
+            let cssStyles = [];
+
+            row.forEach(cell => {
+                if (cell === 9) {
+                    formattedRow += '   '; // Replace 9 with spaces
+                } else if (cell > 0) {
+                    formattedRow += '%c' + cell + '%c '; // Positive numbers in green
+                    cssStyles.push("color: green;", ""); // Style for positive numbers
+                } else if (cell < 0){
+                    formattedRow += '%c' + (-cell) + '%c '; // Negative numbers in red, turned positive
+                    cssStyles.push("color: red;", ""); // Style for negative numbers
+                } else {
+                    formattedRow += '%c' + (-cell) + '%c '; // Negative numbers in red, turned positive
+                    cssStyles.push("color: black;", ""); // Style for negative numbers
+                }
+            });
+
+            console.log(formattedRow, ...cssStyles);
         });
     }
 
     // Attach the click event to the canvas
     canvas.addEventListener('click', function(event) {
+        if (gameOver) {
+            console.log("Game over. No further interactions allowed.");
+            return;
+        }
         getCursorPosition(canvas, event);
     });
 
     function selectRing(row, col) {
+        if (selectMarkerState) {
+            console.log("Select a marker sequence first");
+            console.log(currentPlayer)
+            return;
+        }
         let ringValue = internalBoard[row][col];
         let isPlayerWhiteRing = currentPlayer === 1 && ringValue >= 2 && ringValue <= 6;
         let isPlayerBlackRing = currentPlayer === -1 && ringValue >= -6 && ringValue <= -2;
 
-        if ((isPlayerWhiteRing || isPlayerBlackRing) && rings.length >= 10) {
+        if ((isPlayerWhiteRing || isPlayerBlackRing) && turnCount > 10) {
             selectedRing = { row, col };
             highlightMoves(row, col);
         }
