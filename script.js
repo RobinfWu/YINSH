@@ -67,6 +67,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Function to draw the hover effect or ring
     function drawRing(cx, cy, ringNumber = 0, isHovering = false) {
+        let isTurnWhite = turnCount % 2 !== 0;
+        let isTurnBlack = turnCount % 2 === 0;
         // Determine the color based on the ring number
         let ringColor;
         if (ringNumber === 0) { // Hover effect
@@ -76,12 +78,12 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         // Adjust hover effect condition
-        if (isHovering && !selectMarkerState && !removeRingState) {
+        if (isHovering && !selectMarkerState && !removeRingState && turnCount > 10) {
             // This checks if we're not in a state of selecting a marker or removing a ring
-            let isPlayerRing = (currentPlayer === 1 && ringNumber > 0) || (currentPlayer === -1 && ringNumber < 0);
+            let isPlayerRing = (isTurnWhite && ringNumber > 0) || (isTurnBlack && ringNumber < 0);
             if (isPlayerRing) {
                 // Set color for the filled circle based on the current player
-                ctx.fillStyle = currentPlayer === 1 ? 'white' : 'black';
+                ctx.fillStyle = isTurnWhite ? 'white' : 'black';
                 ctx.beginPath();
                 ctx.arc(cx, cy, 6 * radius, 0, Math.PI * 2);
                 ctx.fill();
@@ -118,6 +120,8 @@ document.addEventListener("DOMContentLoaded", function() {
     // Update the hover effect based on the mouse position
     function updateHoverEffect(mouseX, mouseY) {
         hoverPos = null; // Reset hoverPos
+        let isTurnWhite = turnCount % 2 !== 0;
+        let isTurnBlack = turnCount % 2 === 0;
 
         // Check against the BOARD_TEMPLATE
         BOARD_TEMPLATE.forEach((columns, row) => {
@@ -127,9 +131,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (isWithinCircle(mouseX, mouseY, cx, cy, radius)) {
                     // Check if the position corresponds to the current player's ring
                     let ringValue = internalBoard[row][column];
-                    if (rings.length >= 10 && ((currentPlayer === 1 && ringValue > 0) || (currentPlayer === -1 && ringValue < 0))) {
+                    if (turnCount >= 10 && ((isTurnWhite && ringValue > 0) || (isTurnBlack && ringValue < 0))) {
                         hoverPos = { x: cx, y: cy, row: row, col: column };
-                    } else if (rings.length < 10) {
+                    } else if (turnCount < 10) {
                         hoverPos = { x: cx, y: cy, row: row, col: column };
                     }
                 }
@@ -354,8 +358,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function removeRingIfClicked(row, col) {
-        let playerColor = currentPlayer === 1 ? 'white' : 'black';
-
         let ringIndex = rings.findIndex(ring => {
             let ringRow = Math.floor(ring.y / cellSizeHeight);
             let ringCol = Math.floor(ring.x / cellSizeWidth);
@@ -373,10 +375,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 score[playerToRemoveRing === 1 ? 'white' : 'black']++;
                 console.log(score)
 
-                if (playerToRemoveRing == currentPlayer) {
-                    currentPlayer *= -1;
-                }
-
                 // Reset the state and switch turns
                 selectMarkerState = false;
                 removeRingState = false;
@@ -384,7 +382,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 // Check for winning score
                 if (score.white === 3 || score.black === 3) {
-                    let winner = score.white === 1 ? "White" : "Black";
+                    let winner = score.white === 3 ? "White" : "Black";
                     outcome = winner + " wins the game!";
                     updateOutcomeDisplay();
                     gameOver = true; // Set the game over state
@@ -426,7 +424,6 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             clickableMarkers = []; // Clear the clickable markers
             // Set the turn to the player whose markers were not just scored
-            currentPlayer = scoredMarkerColor === 'white' ? -1 : 1;
 
             // Determine the player who needs to remove a ring
             playerToRemoveRing = scoredMarkerColor === 'white' ? 1 : -1;
@@ -516,19 +513,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
         if (markerSequences.length > 0) {
             selectMarkerState = true; // Set the state to select marker
-//
-//            // Check the color of the markers in the sequences
-//            let playerColor = currentPlayer === 1 ? 'white' : 'black';
-//            let scoredOpponent = markerSequences.some(sequence => sequence[0].color !== playerColor);
-//
-//            // If the player scored for the opponent, switch turns
-//            if (scoredOpponent) {
-//                currentPlayer *= -1;
-//            }
         }
     }
 
     function moveRing(newRow, newCol) {
+        let isTurnWhite = turnCount % 2 !== 0;
+        let isTurnBlack = turnCount % 2 === 0;
         // Check if the new position is valid
         if (!possibleMoves.some(point => point[0] === newRow && point[1] === newCol)) {
             console.log("Invalid move");
@@ -539,14 +529,14 @@ document.addEventListener("DOMContentLoaded", function() {
         let ringNumber = internalBoard[selectedRing.row][selectedRing.col];
 
         // Remove the ring from the original position
-        internalBoard[selectedRing.row][selectedRing.col] = currentPlayer;
+        internalBoard[selectedRing.row][selectedRing.col] = isTurnWhite ? 1 : -1;
         let ringIndex = rings.findIndex(ring => ring.x === selectedRing.col * cellSizeWidth + offsetX && ring.y === selectedRing.row * cellSizeHeight + offsetY);
         if (ringIndex !== -1) {
             rings.splice(ringIndex, 1);
         }
 
         // Place a marker at the original ring position
-        let markerPosition = { x: selectedRing.col * cellSizeWidth + offsetX, y: selectedRing.row * cellSizeHeight + offsetY, row: selectedRing.row, col: selectedRing.col, color: currentPlayer === 1 ? 'white' : 'black' };
+        let markerPosition = { x: selectedRing.col * cellSizeWidth + offsetX, y: selectedRing.row * cellSizeHeight + offsetY, row: selectedRing.row, col: selectedRing.col, color: isTurnWhite ? 'white' : 'black' };
         markers.push(markerPosition);
 
         // Add the ring to the new position
@@ -651,9 +641,13 @@ document.addEventListener("DOMContentLoaded", function() {
             console.log(currentPlayer)
             return;
         }
+
         let ringValue = internalBoard[row][col];
-        let isPlayerWhiteRing = currentPlayer === 1 && ringValue >= 2 && ringValue <= 6;
-        let isPlayerBlackRing = currentPlayer === -1 && ringValue >= -6 && ringValue <= -2;
+        let isTurnWhite = turnCount % 2 !== 0;
+        let isTurnBlack = turnCount % 2 === 0;
+
+        let isPlayerWhiteRing = isTurnWhite && ringValue >= 2 && ringValue <= 6;
+        let isPlayerBlackRing = isTurnBlack && ringValue >= -6 && ringValue <= -2;
 
         if ((isPlayerWhiteRing || isPlayerBlackRing) && turnCount > 10) {
             selectedRing = { row, col };
