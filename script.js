@@ -1,5 +1,8 @@
 document.addEventListener("DOMContentLoaded", function() {
     const canvas = document.getElementById('yinshBoard');
+    const removedRingsCanvas = document.getElementById('removedRingsCanvas');
+    const removedRingsCtx = removedRingsCanvas.getContext('2d');
+
     canvas.width = 570; // New width of the canvas to make the UI square
     canvas.height = 570; // Height of the canvas
     // Define cell sizes
@@ -27,7 +30,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Function to update the turn count display
     function updateTurnDisplay() {
         const turnCounterElement = document.getElementById('turnCounter');
-        turnCounterElement.textContent = `Turn: ${turnCount}`;
+        turnCounterElement.innerHTML = `<strong>Turn:</strong> ${turnCount}`;
     }
 
     // Function to update the outcome displayer
@@ -62,7 +65,7 @@ document.addEventListener("DOMContentLoaded", function() {
     function isWithinCircle(x, y, cx, cy, radius) {
         let dx = x - cx;
         let dy = y - cy;
-        return dx * dx + dy * dy <= radius * radius * 20;
+        return dx * dx + dy * dy <= radius * radius * 30;
     }
 
     // Function to draw the hover effect or ring
@@ -131,9 +134,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (isWithinCircle(mouseX, mouseY, cx, cy, radius)) {
                     // Check if the position corresponds to the current player's ring
                     let ringValue = internalBoard[row][column];
-                    if (turnCount >= 10 && ((isTurnWhite && ringValue > 0) || (isTurnBlack && ringValue < 0))) {
+                    if (turnCount > 10 && ((isTurnWhite && ringValue > 0) || (isTurnBlack && ringValue < 0))) {
                         hoverPos = { x: cx, y: cy, row: row, col: column };
-                    } else if (turnCount < 10) {
+                    } else if (turnCount < 11) {
                         hoverPos = { x: cx, y: cy, row: row, col: column };
                     }
                 }
@@ -319,12 +322,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 let ringNumberAtHover = internalBoard[hoverPos.row][hoverPos.col];
                 if (ringNumberAtHover != 0 && !selectMarkerState) {
                     drawRing(hoverPos.x, hoverPos.y, ringNumberAtHover, true);
-                } else if (turnCount <= 10) {
+                } else if (turnCount <= 11) {
                     drawRing(hoverPos.x, hoverPos.y, 0, true);
                 }
             }
         }
-
     }
 
     function getCursorPosition(canvas, event) {
@@ -373,6 +375,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Remove the ring and update score
                 rings.splice(ringIndex, 1);
                 score[playerToRemoveRing === 1 ? 'white' : 'black']++;
+                drawRemovedRings();
                 console.log(score)
 
                 // Reset the state and switch turns
@@ -738,6 +741,51 @@ document.addEventListener("DOMContentLoaded", function() {
         addMovesFromList(diagonalLists, row, col);
         addMovesFromList(antiDiagonalLists, row, col);
     }
+    function drawRemovedRings() {
+        const startY = 40;  // Starting Y position for drawing removed rings
+        const spacingX = 8 * (radius + 3) + 12; // Horizontal space between each drawn ring
 
+        // Clear the removedRingsCanvas before drawing new rings
+        removedRingsCtx.clearRect(0, 0, removedRingsCanvas.width, removedRingsCanvas.height);
+
+        // Draw white removed rings from left to right
+        let posX = spacingX; // Start from the left edge
+        for (let i = 0; i < score.white; i++) {
+            drawRingOnRemovedCanvas(removedRingsCtx, posX, startY, 1); // 1 for white ring
+            posX += spacingX; // Move to the right for the next ring
+        }
+
+        // Draw black removed rings from right to left
+        posX = removedRingsCanvas.width - spacingX; // Start from the right edge
+        for (let i = 0; i < score.black; i++) {
+            drawRingOnRemovedCanvas(removedRingsCtx, posX, startY, -1); // -1 for black ring
+            posX -= spacingX; // Move to the left for the next ring
+        }
+    }
+
+    function drawRingOnRemovedCanvas(ctx, cx, cy, ringNumber) {
+        // Draw the ring on the provided context (ctx)
+        // Define ring color based on ringNumber
+        let ringColor = ringNumber > 0 ? 'white' : 'black';
+
+        // First draw the black border
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8 * radius + 3, 0, Math.PI * 2); // The border circle is slightly larger
+        ctx.strokeStyle = 'black'; // Color for the border
+        ctx.lineWidth = 2; // Width of the border
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8 * radius - 3, 0, Math.PI * 2); // The border circle is slightly smaller
+        ctx.strokeStyle = 'black'; // Color for the border
+        ctx.lineWidth = 2; // Width of the border
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8 * radius, 0, Math.PI * 2);
+        ctx.strokeStyle = ringColor;  // Permanent rings in white, hover effect in grey
+        ctx.lineWidth = 6;
+        ctx.stroke();
+    }
     drawGrid();
 });
