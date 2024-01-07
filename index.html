@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>YINSH</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <h1>YINSH</h1>
+        <canvas id="yinshBoard" width="570" height="570"></canvas>
+        <p id="turnCounter" align="center">Turn: 1</p>
+        <p id="outcome" align="center"></p>
+        <script src="script.js"></script>
+
+        <h2>Rules:</h2>
+        <h3>A. Contents</h3>
+        <p style="margin-left: 25px;"> &ensp;- 1 game board<br>
+            &ensp;- 5 white and 5 black rings<br>
+            &ensp;- 51 markers (white on one side, black on the other side)<br>
+        <h3>B. Starting position</h3>
+        <p style="margin-left: 25px;"> 1. You begin with an empty board.<br>
+            2. You and your opponent start putting rings on the board, each in turn and one ring at a time. You may put a ring on any intersection you want, including on the edges.<br>
+            3. When you have both put your 5 rings on the board, you have determined the starting position.<br>
+        </p>
+        <h3>C. Moving a ring</h3>
+        <p style="margin-left: 25px;"> 1. You must decide which of your rings you want to move. Put the marker with your color face up in that ring. <br>
+            2. Then you must move the ring in which you have put a marker according to the following rules: <br>
+            &ensp;&ensp;- When moving the ring, you leave the marker on its spot.<br>
+            &ensp;&ensp;- A ring must always move in a straight line and always to a vacant space.<br>
+            &ensp;&ensp;- A ring may move over one or more vacant spaces.<br>
+            &ensp;&ensp;- A ring may jump over one or more markers, regardless of color.<br>
+            &ensp;&ensp;- A ring may jump over one or more markers, regardless of color. If you jump over one or more markers, you must always put your ring in the first vacant space directly behind the markers you jumped over.<br>
+            &ensp;&ensp;- A ring may first move over one or more vacant spaces and continue with a jump over one or more markers.<br>
+            &ensp;&ensp;- A ring can only jump over markers, not over rings.
+        </p>
+        <h3>D. Flipping markers</h3>
+        <p style="margin-left: 25px;">
+            1. If you've jumped over one or more markers, you must flip all those markers. Each white marker becomes black and each black marker becomes white!<br>
+            2. Do not flip the marker that you've put in the ring before you moved; that marker has not been jumped.<br>
+            3. Markers can only be flipped; they cannot be moved.<br>
+        </p>
+        <h3>E. Forming a row / removing a ring</h3>
+        <p style="margin-left: 25px;">
+            1. By moving rings and flipping markers you must try to form a row of 5 markers of your color.<br>
+            2. If you form a row, you must take the 5 markers from the board.<br>
+            3. After removing a row, you must also remove one of your rings.<br>
+        </p>
+        <h3>F. End of the game</h3>
+        <p style="margin-left: 25px;">
+            1. The game ends as soon as a player has removed 3 rings from the board.<br>
+            2. If you make a move that forms both your own and your opponent's third row, then you win since you may remove your third ring first.<br>
+            3.  If all the markers are placed on the board before a player has won, then the player who removed the most rings wins. If both players have removed the same number of rings, the game ends in a draw.<br>
+        </p>
+        <h2>Notes:</h2>
+        <p>&ensp;&ensp;- There are 85 points on the board.<br>
+            &ensp;&ensp;- If you map out the total number of intersection points that can be reached in a given position (including itself), here's what it'd look like:<br>
+        </p>
+        <img src="Yinsh Diagram.png" width="735" height="365">
+        <p>&ensp;&ensp;- After 2000 simulations of random play in YINSH, the following plots the branching factor across turns.<br>
+            &ensp;&ensp;- The average branching factor is 40.<br>
+            &ensp;&ensp;- 81 is the maximum number of turns possible for YINSH.<br>
+            &ensp;&ensp;&ensp;&ensp;- 10 turns are used to place down the 10 rings.<br>
+            &ensp;&ensp;&ensp;&ensp;- There are a total of 51 markers.<br>
+            &ensp;&ensp;&ensp;&ensp;- When you place your marker down to get five in a row, you placed one marker down before five markers are taken off the board. That's a net difference of four.<br>
+            &ensp;&ensp;&ensp;&ensp;- At most, 5 rings (3 of one color, 2 of the other color) can be taken off the board.<br>
+            &ensp;&ensp;&ensp;&ensp;- 5 rings times the net difference of 4 is 20.<br>
+            &ensp;&ensp;&ensp;&ensp;- 10 + 51 + 20 = 81<br>
+        </p>
+        <img src="yinsh_branching_factor.png" width="1050" height="608"><br>
+        <p>&ensp;&ensp;- There are (85 choose 5) * (80 choose 5) possible ways to arrange the ten rings from the first 10 turns. That is 788,548,993,504,272 combinations.<br>
+            &ensp;
+        </p>
+    </body>
+</html>

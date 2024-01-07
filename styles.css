@@ -1,0 +1,41 @@
+body {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+    padding-top: 1000px;
+    flex-direction: column;
+}
+
+canvas {
+    border: 1px solid #000;
+    background-color: #C3D0D8;
+}
+
+p, h2, h3 {
+    align-self: flex-start; /* Aligns this element to the start of the flex container */
+    padding-left: 60px; /* Adjust this value for the desired padding */
+    width: 100%; /* To ensure padding affects the positioning */
+    box-sizing: border-box; /* To ensure padding is included in width */
+}
+
+p {
+    margin-top: 5px; /* Reduces space above the p element */
+    /* The margin-left is already set inline to 25px, which you can adjust if necessary */
+}
+
+h2 {
+    margin-top: 10px; /* Reduces space above the h2 element */
+    margin-bottom: 10px; /* Reduces space below the h2 element */
+}
+
+h3 {
+    margin-top: 5px; /* Reduces space above the h3 element */
+    margin-bottom: 5px; /* Reduces space below the h3 element */
+}
+
+#turnCounter, #outcome {
+    padding-left: 0px;
+}
