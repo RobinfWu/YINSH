@@ -11,9 +11,6 @@ The project is incomplete.
 * Choosing and removing a ring - ✅
 * Adding Win Conditions and Draw Conditions- ✅
 
-Bug:
-* Scoring for the opponent does not switch to the opponent's turn. - To-Do
-
 Link: https://robinfwu.github.io/YINSH/
 
 <img width="446" alt="image" src="https://github.com/RobinfWu/YINSH/assets/8204576/5771a86f-967f-4eeb-a92d-eeb0d30687e7">
