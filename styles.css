@@ -5,11 +5,11 @@ body {
     align-items: center;
     height: 100vh;
     background-color: #f0f0f0;
-    padding-top: 1000px;
+    padding-top: 1050px;
     flex-direction: column;
 }
 
-canvas {
+#yinshBoard {
     border: 1px solid #000;
     background-color: #C3D0D8;
 }
