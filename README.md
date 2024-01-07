@@ -7,8 +7,12 @@ The project is incomplete.
 * Highlight possible moves - ✅
 * Flipping markers - ✅
 * A Counter to keep track of turns - ✅
-* Removing 5 markers in a row - To-DO
-* Choosing and removing a ring - To-DO
+* Removing 5 markers in a row - ✅
+* Choosing and removing a ring - ✅
+* Adding Win Conditions and Draw Conditions- ✅
+
+Bug:
+* Scoring for the opponent does not switch to the opponent's turn. - To-Do
 
 Link: https://robinfwu.github.io/YINSH/
 
