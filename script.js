@@ -2,6 +2,9 @@ document.addEventListener("DOMContentLoaded", function() {
     const canvas = document.getElementById('yinshBoard');
     const removedRingsCanvas = document.getElementById('removedRingsCanvas');
     const removedRingsCtx = removedRingsCanvas.getContext('2d');
+    document.getElementById('randomizeRings').addEventListener('click', function() {
+        randomizeRings();
+    });
 
     canvas.width = 570; // New width of the canvas to make the UI square
     canvas.height = 570; // Height of the canvas
@@ -787,6 +790,55 @@ document.addEventListener("DOMContentLoaded", function() {
         ctx.strokeStyle = ringColor;  // Permanent rings in white, hover effect in grey
         ctx.lineWidth = 6;
         ctx.stroke();
+    }
+
+    function randomizeRings() {
+        // Reset the game state
+        internalBoard.forEach(row => row.fill(0, 0, row.length).fill(9, row.length, gridColumns));
+        rings = [];
+        markers = [];
+        markerSequences = [];
+        clickableMarkers = [];
+        selectMarkerState = false;
+        removeRingState = false;
+        playerToRemoveRing = null;
+        score = { white: 0, black: 0 };
+        outcome = '';
+        gameOver = false;
+        currentPlayer = 1;
+        ringCounter = { '1': 2, '-1': -2 };
+        turnCount = 1;
+        updateTurnDisplay();
+        updateOutcomeDisplay();
+
+        let availablePositions = [];
+        BOARD_TEMPLATE.forEach((columns, row) => {
+            columns.forEach(col => {
+                if (internalBoard[row][col] === 0) {
+                    availablePositions.push({ row, col });
+                }
+            });
+        });
+
+        for (let i = 0; i < 10; i++) {
+            let randomIndex = Math.floor(Math.random() * availablePositions.length);
+            let position = availablePositions[randomIndex];
+            availablePositions.splice(randomIndex, 1); // Remove the chosen position
+
+            // Place the ring on the board
+            internalBoard[position.row][position.col] = ringCounter[currentPlayer];
+            rings.push({
+                x: position.col * cellSizeWidth + offsetX,
+                y: position.row * cellSizeHeight + offsetY,
+                number: ringCounter[currentPlayer]
+            });
+
+            ringCounter[currentPlayer] += currentPlayer; // Update the ring number
+            currentPlayer *= -1; // Switch player after each ring placement
+        }
+        turnCount = 11; // Update turn count to reflect that all rings are placed
+        updateTurnDisplay();
+        drawGrid();
     }
     drawGrid();
 });
