@@ -74,10 +74,11 @@ document.addEventListener("DOMContentLoaded", function() {
         let isTurnBlack = turnCount % 2 === 0;
         // Determine the color based on the ring number
         let ringColor;
-        if (ringNumber === 0) { // Hover effect
-            ringColor = 'grey';
+        if (ringNumber === 0 && isHovering) { // Hover effect
+            // During the ring placement stage, show the hovering ring in the player's color
+            ringColor = isTurnWhite? 'white' : 'black';
         } else {
-            ringColor = ringNumber > 0 ? 'white' : 'black'; // White for positive numbers, black for negative
+            ringColor = ringNumber > 0 ? 'white' : 'black'; // Permanent rings
         }
 
         // Adjust hover effect condition
