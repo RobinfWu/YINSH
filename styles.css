@@ -39,3 +39,20 @@ h3 {
 #turnCounter, #outcome {
     padding-left: 0px;
 }
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    body {
+        padding-top: 50px; /* Reduced padding for smaller screens */
+        align-items: flex-start; /* Align content to the top on mobile */
+    }
+    p, h2, h3 {
+        padding-left: 20px; /* Smaller padding for mobile */
+        font-size: 14px; /* Adjust font size for mobile */
+    }
+    #yinshBoard {
+        width: 100%; /* Full width on mobile */
+        max-width: 570px; /* Maximum width */
+    }
+    /* Add other mobile-specific styles here */
+}
