@@ -811,6 +811,9 @@ document.addEventListener("DOMContentLoaded", function() {
         updateTurnDisplay();
         updateOutcomeDisplay();
 
+        // Clear the removed rings canvas
+        removedRingsCtx.clearRect(0, 0, removedRingsCanvas.width, removedRingsCanvas.height);
+
         let availablePositions = [];
         BOARD_TEMPLATE.forEach((columns, row) => {
             columns.forEach(col => {
