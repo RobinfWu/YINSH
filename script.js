@@ -1,23 +1,43 @@
 document.addEventListener("DOMContentLoaded", function() {
     const canvas = document.getElementById('yinshBoard');
-    const removedRingsCanvas = document.getElementById('removedRingsCanvas');
-    const removedRingsCtx = removedRingsCanvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     document.getElementById('randomizeRings').addEventListener('click', function() {
         randomizeRings();
     });
 
-    canvas.width = 570; // New width of the canvas to make the UI square
-    canvas.height = 570; // Height of the canvas
-    // Define cell sizes
-    const cellSizeHeight = 30; // Height of each cell, keep as 30 pixels
-    const cellSizeWidth = 570 / 11; // Width of each cell, adjusted to make UI square
-    const ctx = canvas.getContext('2d');
-    const gridRows = 19;
-    const gridColumns = 11;
-    const cellSize = 30; // Adjust the size as needed
-    const radius = 3;
+    // Assuming the canvas is square and its size is based on the smallest viewport dimension
+    const canvasSize = Math.min(window.innerWidth, window.innerHeight) * 0.7;
+    const margin = canvasSize * 0.05; // 5% margin, for example
+    const gridSize = canvasSize - margin * 2; // Total grid size after subtracting margins
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
 
+    // The vertical and horizontal spacings now need to account for the margin
+    const verticalSpacing = gridSize / 19;
+    const horizontalSpacing = gridSize / 11;
+
+    // Adjust the radius relative to cell size
+    const radius = Math.min(verticalSpacing, horizontalSpacing) * 0.1;
+
+    const BOARD_TEMPLATE = [
+        [4, 6], [3, 5, 7], [2, 4, 6, 8], [1, 3, 5, 7, 9], [2, 4, 6, 8],
+        [1, 3, 5, 7, 9], [0, 2, 4, 6, 8, 10], [1, 3, 5, 7, 9], [0, 2, 4, 6, 8, 10],
+        [1, 3, 5, 7, 9], [0, 2, 4, 6, 8, 10], [1, 3, 5, 7, 9], [0, 2, 4, 6, 8, 10],
+        [1, 3, 5, 7, 9], [2, 4, 6, 8], [1, 3, 5, 7, 9], [2, 4, 6, 8], [3, 5, 7], [4, 6]
+    ];
+
+    // Representing the board in a 19x11 grid
+    const internalBoard = new Array(19).fill(0).map(() => new Array(11).fill(9));
+    BOARD_TEMPLATE.forEach((columns, row) => {
+        columns.forEach(column => {
+            internalBoard[row][column] = 0; // Mark valid coordinates
+        });
+    });
+    let currentPlayer = 1; // 1 for white, -1 for black
+    let ringCounter = { '1': 2, '-1': -2 }; // Starting values for ring numbers
     let selectedRing = null;
+    let hoverPos = null; // Stores the position of the hover effect
+    let rings = []; // Stores the positions of all placed rings
     let possibleMoves = [];
     let markers = [];
     let turnCount = 1; // Initialize turn counter
@@ -31,166 +51,28 @@ document.addEventListener("DOMContentLoaded", function() {
     let outcome = ''
     let gameOver = false;
 
-    // Function to update the turn count display
-    function updateTurnDisplay() {
-        const turnCounterElement = document.getElementById('turnCounter');
-        turnCounterElement.innerHTML = `<strong>Turn:</strong> ${turnCount}`;
-    }
 
-    // Function to update the outcome displayer
-    function updateOutcomeDisplay() {
-        const outcomeElement = document.getElementById('outcome');
-        outcomeElement.textContent = `${outcome}`;
-    }
-
-    const BOARD_TEMPLATE = [
-        [4, 6], [3, 5, 7], [2, 4, 6, 8], [1, 3, 5, 7, 9], [2, 4, 6, 8],
-        [1, 3, 5, 7, 9], [0, 2, 4, 6, 8, 10], [1, 3, 5, 7, 9], [0, 2, 4, 6, 8, 10],
-        [1, 3, 5, 7, 9], [0, 2, 4, 6, 8, 10], [1, 3, 5, 7, 9], [0, 2, 4, 6, 8, 10],
-        [1, 3, 5, 7, 9], [2, 4, 6, 8], [1, 3, 5, 7, 9], [2, 4, 6, 8], [3, 5, 7], [4, 6]
-    ];
-
-    // Calculate the board's actual width and height
-    const boardActualWidth = cellSizeWidth * 10; // As there are 11 columns, but we need space only for 10 gaps
-    const boardActualHeight = cellSizeHeight * (BOARD_TEMPLATE.length - 1);
-
-    // Determine the canvas's center
-    const canvasCenterX = canvas.width / 2;
-    const canvasCenterY = canvas.height / 2;
-
-    // Calculate the starting x and y coordinates to center the board
-    const offsetX = canvasCenterX - (boardActualWidth / 2);
-    const offsetY = canvasCenterY - (boardActualHeight / 2);
-
-    let hoverPos = null; // Stores the position of the hover effect
-    let rings = []; // Stores the positions of all placed rings
-
-    // Function to check if a position is within a circle's radius
-    function isWithinCircle(x, y, cx, cy, radius) {
-        let dx = x - cx;
-        let dy = y - cy;
-        return dx * dx + dy * dy <= radius * radius * 30;
-    }
-
-    // Function to draw the hover effect or ring
-    function drawRing(cx, cy, ringNumber = 0, isHovering = false) {
-        let isTurnWhite = turnCount % 2 !== 0;
-        let isTurnBlack = turnCount % 2 === 0;
-        // Determine the color based on the ring number
-        let ringColor;
-        if (ringNumber === 0 && isHovering) { // Hover effect
-            // During the ring placement stage, show the hovering ring in the player's color
-            ringColor = isTurnWhite? 'white' : 'black';
-        } else {
-            ringColor = ringNumber > 0 ? 'white' : 'black'; // Permanent rings
-        }
-
-        // Adjust hover effect condition
-        if (isHovering && !selectMarkerState && !removeRingState && turnCount > 10) {
-            // This checks if we're not in a state of selecting a marker or removing a ring
-            let isPlayerRing = (isTurnWhite && ringNumber > 0) || (isTurnBlack && ringNumber < 0);
-            if (isPlayerRing) {
-                // Set color for the filled circle based on the current player
-                ctx.fillStyle = isTurnWhite ? 'white' : 'black';
-                ctx.beginPath();
-                ctx.arc(cx, cy, 6 * radius, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Draw the thin blue border
-                ctx.strokeStyle = 'blue';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                return; // Skip drawing the rest if it's just a hover effect
-            }
-        }
-
-        // First draw the black border
-        ctx.beginPath();
-        ctx.arc(cx, cy, 8 * radius + 3, 0, Math.PI * 2); // The border circle is slightly larger
-        ctx.strokeStyle = 'black'; // Color for the border
-        ctx.lineWidth = 2; // Width of the border
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, 8 * radius - 3, 0, Math.PI * 2); // The border circle is slightly smaller
-        ctx.strokeStyle = 'black'; // Color for the border
-        ctx.lineWidth = 2; // Width of the border
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, 8 * radius, 0, Math.PI * 2);
-        ctx.strokeStyle = ringColor;  // Permanent rings in white, hover effect in grey
-        ctx.lineWidth = 6;
-        ctx.stroke();
-    }
-
-    // Update the hover effect based on the mouse position
-    function updateHoverEffect(mouseX, mouseY) {
-        hoverPos = null; // Reset hoverPos
-        let isTurnWhite = turnCount % 2 !== 0;
-        let isTurnBlack = turnCount % 2 === 0;
-
-        // Check against the BOARD_TEMPLATE
-        BOARD_TEMPLATE.forEach((columns, row) => {
-            columns.forEach(column => {
-                let cx = column * cellSizeWidth + offsetX;
-                let cy = row * cellSizeHeight + offsetY;
-                if (isWithinCircle(mouseX, mouseY, cx, cy, radius)) {
-                    // Check if the position corresponds to the current player's ring
-                    let ringValue = internalBoard[row][column];
-                    if (turnCount > 10 && ((isTurnWhite && ringValue > 0) || (isTurnBlack && ringValue < 0))) {
-                        hoverPos = { x: cx, y: cy, row: row, col: column };
-                    } else if (turnCount < 11) {
-                        hoverPos = { x: cx, y: cy, row: row, col: column };
-                    }
-                }
-            });
-        });
-
-       possibleMoves.forEach(move => {
-            const moveX = move[1] * cellSizeWidth + offsetX;
-            const moveY = move[0] * cellSizeHeight + offsetY;
-            if (isWithinCircle(mouseX, mouseY, moveX, moveY, radius)) {
-                hoverPos = { x: moveX, y: moveY, isPotentialMove: true };
-            }
-        });
-
-        drawGrid(); // Redraw the grid
-    }
-
-    // Function to handle mouse moves
-    function onMouseMove(event) {
-        if (gameOver) {
-            console.log("Game over. No further interactions allowed.");
-            return;
-        }
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-        updateHoverEffect(mouseX, mouseY);
-    }
-
-    // Attach mouse move and click event listeners to the canvas
-    canvas.addEventListener('mousemove', onMouseMove);
-
-    // Function to draw the grid
     function drawGrid() {
-        // Set a stroke or fill style to make sure the circles are visible
         ctx.fillStyle = 'black'; // Change the color if needed
-
-        // Clear the canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         function drawLines(lineList) {
-        lineList.forEach(line => {
-            const [start, end] = line;
-            ctx.beginPath();
-            ctx.moveTo((start[1] * cellSizeWidth) + offsetX, (start[0] * cellSizeHeight) + offsetY);
-            ctx.lineTo((end[1] * cellSizeWidth) + offsetX, (end[0] * cellSizeHeight) + offsetY);
-            ctx.stroke();
-        });
-    }
+            lineList.forEach(line => {
+                const [[startRow, startCol], [endRow, endCol]] = line;
+
+                // Translate grid indices to canvas coordinates
+                const startX = startCol * horizontalSpacing + horizontalSpacing / 2 + margin;
+                const startY = startRow * verticalSpacing + verticalSpacing / 2 + margin;
+                const endX = endCol * horizontalSpacing + horizontalSpacing / 2 + margin;
+                const endY = endRow * verticalSpacing + verticalSpacing / 2 + margin;
+
+                // Draw the line on the canvas
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            });
+        }
 
         // Define the vertical lines
         const verticalLists = [
@@ -250,10 +132,14 @@ document.addEventListener("DOMContentLoaded", function() {
         // Draw the anti-diagonal lines
         drawLines(antiDiagonalLists);
 
+        // Loop over each row in the BOARD_TEMPLATE
         BOARD_TEMPLATE.forEach((columns, row) => {
+            // Loop over each column index in the current row
             columns.forEach(column => {
-                const x = column * cellSizeWidth + offsetX;
-                const y = row * cellSizeHeight + offsetY;
+                // Calculate the x and y position for each dot, based on the index
+                // and account for the margin
+                const x = column * horizontalSpacing + horizontalSpacing / 2 + margin;
+                const y = row * verticalSpacing + verticalSpacing / 2 + margin;
 
                 if (possibleMoves.some(point => point[0] === row && point[1] === column)) {
                     ctx.fillStyle = 'red'; // Set fill style for red circles
@@ -261,6 +147,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     ctx.fillStyle = 'black'; // Set fill style for default circles
                 }
 
+                // Draw the dot
                 ctx.beginPath();
                 ctx.arc(x, y, radius, 0, Math.PI * 2);
                 ctx.fill();
@@ -300,6 +187,8 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         }
 
+        drawRemovedRings();
+
         // Draw the hover effect for potential moves
         if (hoverPos && hoverPos.isPotentialMove) {
             // First draw the black border
@@ -334,18 +223,154 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    // Function to draw the hover effect or ring
+    function drawRing(cx, cy, ringNumber = 0, isHovering = false) {
+        let isTurnWhite = turnCount % 2 !== 0;
+        let isTurnBlack = turnCount % 2 === 0;
+        // Determine the color based on the ring number
+        let ringColor;
+        if (ringNumber === 0 && isHovering) { // Hover effect
+            // During the ring placement stage, show the hovering ring in the player's color
+            ringColor = isTurnWhite? 'white' : 'black';
+        } else {
+            ringColor = ringNumber > 0 ? 'white' : 'black'; // Permanent rings
+        }
+
+        // Adjust hover effect condition
+        if (isHovering && !selectMarkerState && !removeRingState && turnCount > 10) {
+            // This checks if we're not in a state of selecting a marker or removing a ring
+            let isPlayerRing = (isTurnWhite && ringNumber > 0) || (isTurnBlack && ringNumber < 0);
+            if (isPlayerRing) {
+                // Set color for the filled circle based on the current player
+                ctx.fillStyle = isTurnWhite ? 'white' : 'black';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 6 * radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw the thin blue border
+                ctx.strokeStyle = 'blue';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                return; // Skip drawing the rest if it's just a hover effect
+            }
+        }
+
+        // First draw the black border
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8 * radius + 3, 0, Math.PI * 2); // The border circle is slightly larger
+        ctx.strokeStyle = 'black'; // Color for the border
+        ctx.lineWidth = 2; // Width of the border
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8 * radius - 3, 0, Math.PI * 2); // The border circle is slightly smaller
+        ctx.strokeStyle = 'black'; // Color for the border
+        ctx.lineWidth = 2; // Width of the border
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8 * radius, 0, Math.PI * 2);
+        ctx.strokeStyle = ringColor;  // Permanent rings in white, hover effect in grey
+        ctx.lineWidth = 6;
+        ctx.stroke();
+    }
+
+    // Function to add a ring to the internal board representation
+    function addRingToBoard(row, col) {
+        // Count the number of rings already placed
+        let totalRingsPlaced = rings.length;
+
+        // Check if it's within the first ten turns and the selected spot is empty
+        if (turnCount <= 10 && internalBoard[row] && internalBoard[row][col] === 0) {
+            internalBoard[row][col] = ringCounter[currentPlayer];
+            rings.push({ x: col * horizontalSpacing + horizontalSpacing / 2 + margin, y: row * verticalSpacing + verticalSpacing / 2 + margin, number: ringCounter[currentPlayer] });
+            ringCounter[currentPlayer] += currentPlayer; // Increment or decrement the ring number
+            currentPlayer *= -1; // Switch player
+            turnCount++; // Increment turn count
+            updateTurnDisplay(); // Update the display
+            drawGrid(); // Redraw the grid with the new ring
+        } else if (turnCount > 10) {
+            console.log("Rings can no longer be placed. Move existing rings.");
+        } else if (totalRingsPlaced >= 10) {
+            console.log("All rings placed. No further placement allowed.");
+        }
+    }
+
+    function isWithinCircle(mouseX, mouseY, circleX, circleY, radius) {
+        const dx = mouseX - circleX;
+        const dy = mouseY - circleY;
+        return dx * dx + dy * dy <= radius * radius * 30;
+    }
+
+    // Update the hover effect based on the mouse position
+    function updateHoverEffect(mouseX, mouseY) {
+        hoverPos = null; // Reset hoverPos
+        let isTurnWhite = turnCount % 2 !== 0;
+        let isTurnBlack = turnCount % 2 === 0;
+
+        // Check against the BOARD_TEMPLATE
+        BOARD_TEMPLATE.forEach((columns, row) => {
+            columns.forEach(column => {
+                // Calculate the center x and y position based on horizontalSpacing and verticalSpacing
+                let cx = column * horizontalSpacing + horizontalSpacing / 2 + margin;
+                let cy = row * verticalSpacing + verticalSpacing / 2 + margin;
+
+                if (isWithinCircle(mouseX, mouseY, cx, cy, radius)) {
+                    // Check if the position corresponds to the current player's ring
+                    let ringValue = internalBoard[row][column];
+                    if (turnCount > 10 && ((isTurnWhite && ringValue > 0) || (isTurnBlack && ringValue < 0))) {
+                        hoverPos = { x: cx, y: cy, row: row, col: column };
+                    } else if (turnCount <= 10) {
+                        hoverPos = { x: cx, y: cy, row: row, col: column };
+                    }
+
+                    // If there is a hover position, draw the hover ring
+                    if (hoverPos) {
+                        drawRing(hoverPos.x, hoverPos.y, 0, true); // Pass true for isHovering
+                    }
+                }
+            });
+        });
+
+        possibleMoves.forEach(move => {
+            const moveX = move[1] * horizontalSpacing + horizontalSpacing / 2 + margin;
+            const moveY = move[0] * verticalSpacing + verticalSpacing / 2 + margin;
+            if (isWithinCircle(mouseX, mouseY, moveX, moveY, radius)) {
+                hoverPos = { x: moveX, y: moveY, isPotentialMove: true };
+            }
+        });
+
+        drawGrid(); // Redraw the grid
+    }
+
+    function onMouseMove(event) {
+        // Calculate the mouse position within the canvas
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;    // relationship bitmap vs. element for X
+        const scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for Y
+
+        const mouseX = (event.clientX - rect.left) * scaleX;  // scale mouse coordinates after they have
+        const mouseY = (event.clientY - rect.top) * scaleY;   // been adjusted to be relative to element
+
+        updateHoverEffect(mouseX, mouseY);
+    }
+
     function getCursorPosition(canvas, event) {
         const rect = canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
+        const scaleX = canvas.width / rect.width;    // relationship bitmap vs. element for X
+        const scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for Y
 
-        // Adjust for offset and cell size
-        let adjustedColumn = Math.floor(mouseX / cellSizeWidth);
-        let adjustedRow = Math.floor(mouseY / cellSizeHeight);
+        const mouseColumn = (event.clientX - rect.left) * scaleX;  // scale mouse coordinates after they have
+        const mouseRow = (event.clientY - rect.top) * scaleY;   // been adjusted to be relative to element
+
+       // Convert mouse coordinates to grid indices
+        const adjustedColumn = Math.floor(mouseColumn / horizontalSpacing) - 1;
+        const adjustedRow = Math.floor(mouseRow / verticalSpacing) - 1;
 
         // Check if the click is within the bounds of the board
-        if (adjustedRow >= 0 && adjustedRow < gridRows &&
-            adjustedColumn >= 0 && adjustedColumn < gridColumns &&
+        if (adjustedRow >= 0 && adjustedRow < 19 &&
+            adjustedColumn >= 0 && adjustedColumn < 11 &&
             BOARD_TEMPLATE[adjustedRow].includes(adjustedColumn)) {
             addRingToBoard(adjustedRow, adjustedColumn);
         }
@@ -375,7 +400,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 drawGrid();
                 if (selectMarkerState) {
                    removeRingAtStartOfTurn = true;
-                   checkForMarkerRemoval(adjustedRow, adjustedColumn);
+                   checkForMarkerRemoval(gridRow, adjustedColumn);
                 }
             }
             selectRing(adjustedRow, adjustedColumn);
@@ -385,10 +410,14 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function removeRingIfClicked(row, col) {
+        // Convert row and column indices into canvas coordinates
+        let clickedX = col * horizontalSpacing + horizontalSpacing / 2 + margin;
+        let clickedY = row * verticalSpacing + verticalSpacing / 2 + margin;
+
+        // Find the index of the ring that matches the clicked position
         let ringIndex = rings.findIndex(ring => {
-            let ringRow = Math.floor(ring.y / cellSizeHeight);
-            let ringCol = Math.floor(ring.x / cellSizeWidth);
-            return ringRow === row && ringCol === col;
+            return Math.abs(ring.x - clickedX) < horizontalSpacing / 2 &&
+                   Math.abs(ring.y - clickedY) < verticalSpacing / 2;
         });
 
         if (ringIndex !== -1) {
@@ -423,6 +452,7 @@ document.addEventListener("DOMContentLoaded", function() {
             printBoard();
         }
     }
+
 
     function checkForMarkerRemoval(row, col) {
         // Check if the clicked position is a clickable marker
@@ -481,7 +511,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     if (internalBoard[row][col] === 1 || internalBoard[row][col] === -1) {
                         internalBoard[row][col] *= -1; // Flip the marker
                         // Update marker color in the markers array
-                        let markerIndex = markers.findIndex(marker => marker.x === col * cellSizeWidth + offsetX && marker.y === row * cellSizeHeight + offsetY);
+                        let markerIndex = markers.findIndex(marker => marker.x === col * horizontalSpacing + horizontalSpacing / 2 + margin && marker.y === row * verticalSpacing + verticalSpacing / 2 + margin);
                         if (markerIndex !== -1) {
                             markers[markerIndex].color = internalBoard[row][col] === 1 ? 'white' : 'black';
                         }
@@ -560,18 +590,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // Remove the ring from the original position
         internalBoard[selectedRing.row][selectedRing.col] = isTurnWhite ? 1 : -1;
-        let ringIndex = rings.findIndex(ring => ring.x === selectedRing.col * cellSizeWidth + offsetX && ring.y === selectedRing.row * cellSizeHeight + offsetY);
+        let ringIndex = rings.findIndex(ring => ring.x === selectedRing.col * horizontalSpacing + horizontalSpacing / 2 + margin && ring.y === selectedRing.row * verticalSpacing + verticalSpacing / 2 + margin);
         if (ringIndex !== -1) {
             rings.splice(ringIndex, 1);
         }
 
         // Place a marker at the original ring position
-        let markerPosition = { x: selectedRing.col * cellSizeWidth + offsetX, y: selectedRing.row * cellSizeHeight + offsetY, row: selectedRing.row, col: selectedRing.col, color: isTurnWhite ? 'white' : 'black' };
+        let markerPosition = { x: selectedRing.col * horizontalSpacing + horizontalSpacing / 2 + margin, y: selectedRing.row * verticalSpacing + verticalSpacing / 2 + margin, row: selectedRing.row, col: selectedRing.col, color: isTurnWhite ? 'white' : 'black' };
         markers.push(markerPosition);
 
         // Add the ring to the new position
         internalBoard[newRow][newCol] = ringNumber;
-        rings.push({ x: newCol * cellSizeWidth + offsetX, y: newRow * cellSizeHeight + offsetY, number: ringNumber });
+        rings.push({ x: newCol * horizontalSpacing + horizontalSpacing / 2 + margin, y: newRow * verticalSpacing + verticalSpacing / 2 + margin, number: ringNumber });
 
         // Flip markers along the path
         flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
@@ -617,72 +647,6 @@ document.addEventListener("DOMContentLoaded", function() {
         // Redraw the grid with the updated positions
         drawGrid();
     }
-
-    // Representing the board in a 19x11 grid
-    const internalBoard = new Array(19).fill(0).map(() => new Array(11).fill(9));
-    BOARD_TEMPLATE.forEach((columns, row) => {
-        columns.forEach(column => {
-            internalBoard[row][column] = 0; // Mark valid coordinates
-        });
-    });
-
-    let currentPlayer = 1; // 1 for white, -1 for black
-    let ringCounter = { '1': 2, '-1': -2 }; // Starting values for ring numbers
-
-    // Function to add a ring to the internal board representation
-    function addRingToBoard(row, col) {
-        // Count the number of rings already placed
-        let totalRingsPlaced = rings.length;
-
-        // Check if it's within the first ten turns and the selected spot is empty
-        if (turnCount <= 10 && internalBoard[row] && internalBoard[row][col] === 0) {
-            internalBoard[row][col] = ringCounter[currentPlayer];
-            rings.push({ x: col * cellSizeWidth + offsetX, y: row * cellSizeHeight + offsetY, number: ringCounter[currentPlayer] });
-            ringCounter[currentPlayer] += currentPlayer; // Increment or decrement the ring number
-            currentPlayer *= -1; // Switch player
-            turnCount++; // Increment turn count
-            updateTurnDisplay(); // Update the display
-            drawGrid(); // Redraw the grid with the new ring
-        } else if (turnCount > 10) {
-            console.log("Rings can no longer be placed. Move existing rings.");
-        } else if (totalRingsPlaced >= 10) {
-            console.log("All rings placed. No further placement allowed.");
-        }
-    }
-
-    // Function to print the board to the console
-    function printBoard() {
-        internalBoard.forEach(row => {
-            let formattedRow = '';
-            let cssStyles = [];
-
-            row.forEach(cell => {
-                if (cell === 9) {
-                    formattedRow += '   '; // Replace 9 with spaces
-                } else if (cell > 0) {
-                    formattedRow += '%c' + cell + '%c '; // Positive numbers in green
-                    cssStyles.push("color: green;", ""); // Style for positive numbers
-                } else if (cell < 0){
-                    formattedRow += '%c' + (-cell) + '%c '; // Negative numbers in red, turned positive
-                    cssStyles.push("color: red;", ""); // Style for negative numbers
-                } else {
-                    formattedRow += '%c' + (-cell) + '%c '; // Negative numbers in red, turned positive
-                    cssStyles.push("color: black;", ""); // Style for negative numbers
-                }
-            });
-
-            console.log(formattedRow, ...cssStyles);
-        });
-    }
-
-    // Attach the click event to the canvas
-    canvas.addEventListener('click', function(event) {
-        if (gameOver) {
-            console.log("Game over. No further interactions allowed.");
-            return;
-        }
-        getCursorPosition(canvas, event);
-    });
 
     function selectRing(row, col) {
         if (selectMarkerState || removeRingState) {
@@ -788,24 +752,26 @@ document.addEventListener("DOMContentLoaded", function() {
         addMovesFromList(antiDiagonalLists, row, col);
     }
     function drawRemovedRings() {
-        const startY = 40;  // Starting Y position for drawing removed rings
-        const spacingX = 8 * (radius + 3) + 12; // Horizontal space between each drawn ring
+        const bottomLeftStartX = margin;  // Starting X position for white rings at the bottom left
+        const bottomLeftStartY = canvas.height - margin - (radius * 2);  // Starting Y just above the bottom edge
+        const upperRightStartX = canvas.width - margin - (radius * 2);  // Starting X for black rings just left of the right edge
+        const upperRightStartY = margin;  // Starting Y position for black rings at the upper right
 
-        // Clear the removedRingsCanvas before drawing new rings
-        removedRingsCtx.clearRect(0, 0, removedRingsCanvas.width, removedRingsCanvas.height);
+        // Calculate the spacing based on the size of the rings
+        const spacing = radius * 20; // Space between the centers of the rings
 
-        // Draw white removed rings from left to right
-        let posX = spacingX; // Start from the left edge
+        // Draw white removed rings along the bottom left
+        let posX = bottomLeftStartX + radius; // Start from the left edge
         for (let i = 0; i < score.white; i++) {
-            drawRingOnRemovedCanvas(removedRingsCtx, posX, startY, 1); // 1 for white ring
-            posX += spacingX; // Move to the right for the next ring
+            drawRingOnRemovedCanvas(ctx, posX, bottomLeftStartY, 1); // 1 for white ring
+            posX += spacing; // Move to the right for the next ring
         }
 
-        // Draw black removed rings from right to left
-        posX = removedRingsCanvas.width - spacingX; // Start from the right edge
+        // Draw black removed rings along the upper right
+        posX = upperRightStartX - radius; // Start from the right edge
         for (let i = 0; i < score.black; i++) {
-            drawRingOnRemovedCanvas(removedRingsCtx, posX, startY, -1); // -1 for black ring
-            posX -= spacingX; // Move to the left for the next ring
+            drawRingOnRemovedCanvas(ctx, posX, upperRightStartY, -1); // -1 for black ring
+            posX -= spacing; // Move to the left for the next ring
         }
     }
 
@@ -836,7 +802,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function randomizeRings() {
         // Reset the game state
-        internalBoard.forEach(row => row.fill(0, 0, row.length).fill(9, row.length, gridColumns));
+        internalBoard.forEach(row => row.fill(0, 0, row.length).fill(9, row.length, 11));
         rings = [];
         markers = [];
         markerSequences = [];
@@ -854,7 +820,7 @@ document.addEventListener("DOMContentLoaded", function() {
         updateOutcomeDisplay();
 
         // Clear the removed rings canvas
-        removedRingsCtx.clearRect(0, 0, removedRingsCanvas.width, removedRingsCanvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         let availablePositions = [];
         BOARD_TEMPLATE.forEach((columns, row) => {
@@ -873,8 +839,8 @@ document.addEventListener("DOMContentLoaded", function() {
             // Place the ring on the board
             internalBoard[position.row][position.col] = ringCounter[currentPlayer];
             rings.push({
-                x: position.col * cellSizeWidth + offsetX,
-                y: position.row * cellSizeHeight + offsetY,
+                x: position.col * horizontalSpacing + horizontalSpacing / 2 + margin,
+                y: position.row * verticalSpacing + verticalSpacing / 2 + margin,
                 number: ringCounter[currentPlayer]
             });
 
@@ -885,5 +851,53 @@ document.addEventListener("DOMContentLoaded", function() {
         updateTurnDisplay();
         drawGrid();
     }
+
+    // Function to update the turn count display
+    function updateTurnDisplay() {
+        const turnCounterElement = document.getElementById('turnCounter');
+        turnCounterElement.innerHTML = `<strong>Turn:</strong> ${turnCount}`;
+    }
+
+    // Function to update the outcome displayer
+    function updateOutcomeDisplay() {
+        const outcomeElement = document.getElementById('outcome');
+        outcomeElement.textContent = `${outcome}`;
+    }
+
+    canvas.addEventListener('mousemove', onMouseMove);
+    // Attach the click event to the canvas
+    canvas.addEventListener('click', function(event) {
+        if (gameOver) {
+            console.log("Game over. No further interactions allowed.");
+            return;
+        }
+        getCursorPosition(canvas, event);
+    });
+
+        // Function to print the board to the console
+    function printBoard() {
+        internalBoard.forEach(row => {
+            let formattedRow = '';
+            let cssStyles = [];
+
+            row.forEach(cell => {
+                if (cell === 9) {
+                    formattedRow += '   '; // Replace 9 with spaces
+                } else if (cell > 0) {
+                    formattedRow += '%c' + cell + '%c '; // Positive numbers in green
+                    cssStyles.push("color: green;", ""); // Style for positive numbers
+                } else if (cell < 0){
+                    formattedRow += '%c' + (-cell) + '%c '; // Negative numbers in red, turned positive
+                    cssStyles.push("color: red;", ""); // Style for negative numbers
+                } else {
+                    formattedRow += '%c' + (-cell) + '%c '; // Negative numbers in red, turned positive
+                    cssStyles.push("color: black;", ""); // Style for negative numbers
+                }
+            });
+
+            console.log(formattedRow, ...cssStyles);
+        });
+    }
+
     drawGrid();
 });
