@@ -509,13 +509,15 @@ document.addEventListener("DOMContentLoaded", function() {
         // Identify clickable markers in each sequence
         markerSequences.forEach(sequence => {
             let len = sequence.length;
-            if (len % 2 === 0) { // Even length
-                let middleIndex1 = len / 2 - 1;
-                let middleIndex2 = len / 2;
-                clickableMarkers.push(sequence[middleIndex1], sequence[middleIndex2]);
-            } else { // Odd length
-                let middleIndex = Math.floor(len / 2);
-                clickableMarkers.push(sequence[middleIndex]);
+            let startIndex, endIndex;
+            startIndex = 2;
+            endIndex = len - 3;
+
+            // Ensure the indices are within bounds and add them to clickableMarkers
+            for (let i = startIndex; i <= endIndex && i < len; i++) {
+                if (i >= 0) {
+                    clickableMarkers.push(sequence[i]);
+                }
             }
         });
         if (markerSequences.length > 0) {
