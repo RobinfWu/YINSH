@@ -168,11 +168,6 @@ document.addEventListener("DOMContentLoaded", function() {
             ctx.stroke();
         });
 
-        // Draw all permanent rings
-        rings.forEach(ring => {
-            drawRing(ring.x, ring.y, ring.number, false);
-        });
-
         // Highlight rings for removal if in remove ring state
         if (removeRingState) {
             rings.forEach(ring => {
@@ -221,6 +216,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             }
         }
+
+        // Draw all permanent rings
+        rings.forEach(ring => {
+            drawRing(ring.x, ring.y, ring.number, false);
+        });
     }
 
     // Function to draw the hover effect or ring
