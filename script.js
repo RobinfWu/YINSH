@@ -353,6 +353,10 @@ document.addEventListener("DOMContentLoaded", function() {
             printBoard()
             moveRing(adjustedRow, adjustedColumn);
         } else if (removeRingState === false){
+            checkForMarkerSequences();
+            if (selectMarkerState) {
+               checkForMarkerRemoval(adjustedRow, adjustedColumn);
+            }
             selectRing(adjustedRow, adjustedColumn);
             checkForMarkerRemoval(adjustedRow, adjustedColumn);
         }
@@ -475,6 +479,7 @@ document.addEventListener("DOMContentLoaded", function() {
         clickableMarkers = []; // Reset clickable markers
 
         const allPaths = [...verticalLists, ...diagonalLists, ...antiDiagonalLists];
+        let currentPlayerColor = currentPlayer === 1 ? 'white' : 'black';
 
         allPaths.forEach(path => {
             let currentSequence = [];
