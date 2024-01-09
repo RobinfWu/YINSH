@@ -26,6 +26,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let selectMarkerState = false;
     let removeRingState = false;
     let playerToRemoveRing = null; // This will be set to 1 for white or -1 for black
+    let removeRingAtStartOfTurn = null;
     let score = { white: 0, black: 0 };
     let outcome = ''
     let gameOver = false;
@@ -349,21 +350,37 @@ document.addEventListener("DOMContentLoaded", function() {
             addRingToBoard(adjustedRow, adjustedColumn);
         }
 
-        if (selectedRing) {
-            printBoard()
-            moveRing(adjustedRow, adjustedColumn);
-        } else if (removeRingState === false){
-            checkForMarkerSequences();
-            if (selectMarkerState) {
-               checkForMarkerRemoval(adjustedRow, adjustedColumn);
-            }
-            selectRing(adjustedRow, adjustedColumn);
-            checkForMarkerRemoval(adjustedRow, adjustedColumn);
-        }
-
         if (removeRingState) {
             // Only allow ring removal in this state
             removeRingIfClicked(adjustedRow, adjustedColumn);
+            if (!removeRingAtStartOfTurn) {
+                currentPlayer *= -1;
+                turnCount++; // Increment turn count
+                updateTurnDisplay(); // Update the display
+            }
+            removeRingAtStartOfTurn = false;
+            drawGrid();
+        }
+
+        if (selectedRing) {
+            printBoard()
+            moveRing(adjustedRow, adjustedColumn);
+
+        } else if (removeRingState === false){
+            drawGrid();
+            if (selectMarkerState) {
+               checkForMarkerRemoval(adjustedRow, adjustedColumn);
+            } else {
+                checkForMarkerSequences();
+                drawGrid();
+                if (selectMarkerState) {
+                   removeRingAtStartOfTurn = true;
+                   checkForMarkerRemoval(adjustedRow, adjustedColumn);
+                }
+            }
+            selectRing(adjustedRow, adjustedColumn);
+            checkForMarkerRemoval(adjustedRow, adjustedColumn);
+            drawGrid();
         }
     }
 
@@ -479,7 +496,6 @@ document.addEventListener("DOMContentLoaded", function() {
         clickableMarkers = []; // Reset clickable markers
 
         const allPaths = [...verticalLists, ...diagonalLists, ...antiDiagonalLists];
-        let currentPlayerColor = currentPlayer === 1 ? 'white' : 'black';
 
         allPaths.forEach(path => {
             let currentSequence = [];
@@ -560,13 +576,32 @@ document.addEventListener("DOMContentLoaded", function() {
         // Flip markers along the path
         flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
 
+        checkForMarkerSequences();
+        let currentPlayerColor = isTurnWhite ? 'white' : 'black';
+        clickableMarkers = clickableMarkers.filter(sequence => sequence.color === currentPlayerColor);
+        markerSequences = markerSequences.filter(sequence => sequence.length > 0 && sequence[0].color === currentPlayerColor);
+
         // Reset selectedRing and possibleMoves
         selectedRing = null;
         possibleMoves = [];
+
+        if (selectMarkerState && clickableMarkers.length > 0) {
+            drawGrid();
+            return;
+        } else {
+            selectMarkerState = false;
+        }
+
         currentPlayer *= -1;
         turnCount++; // Increment turn count
         updateTurnDisplay(); // Update the display
+
         checkForMarkerSequences();
+        drawGrid();
+        if (selectMarkerState) {
+           removeRingAtStartOfTurn = true;
+           return;
+        }
 
         if (markers.length == 51) {
             if (score.white > score.black) {
@@ -650,8 +685,8 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     function selectRing(row, col) {
-        if (selectMarkerState) {
-            console.log("Select a marker sequence first");
+        if (selectMarkerState || removeRingState) {
+            console.log("Select a marker sequence first or remove a ring first");
             console.log(currentPlayer)
             return;
         }
