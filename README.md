@@ -11,5 +11,6 @@ Stages of the Game:
 
 Link: https://robinfwu.github.io/YINSH/
 
-<img width="486" alt="image" src="https://github.com/RobinfWu/YINSH/assets/8204576/f2ab5885-04e8-4eca-84db-27a16198faab">
+<img width="607" alt="image" src="https://github.com/RobinfWu/YINSH/assets/8204576/7508676a-f155-4cec-bbaf-7a317b25c8af">
+
 
