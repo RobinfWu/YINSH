@@ -56,6 +56,54 @@ document.addEventListener("DOMContentLoaded", function() {
         ctx.fillStyle = 'black'; // Change the color if needed
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        function drawHexagonBackground(ctx, vertices) {
+            ctx.beginPath();
+            const startY = vertices[0].x * verticalSpacing + verticalSpacing / 2 + margin;
+            const startX = vertices[0].y * horizontalSpacing + horizontalSpacing / 2 + margin;
+            ctx.moveTo(startX, startY);
+
+            for (let i = 1; i < vertices.length; i++) {
+                const y = vertices[i].x * verticalSpacing + verticalSpacing / 2 + margin;
+                const x = vertices[i].y * horizontalSpacing + horizontalSpacing / 2 + margin;
+                ctx.lineTo(x, y);
+            }
+
+            ctx.closePath(); // Closes the path to the starting point to form a shape
+            ctx.fillStyle = '#C3D0D8';
+            ctx.fill();
+        }
+
+        function drawGridWithWhiteBackground(ctx) {
+            // Define the vertices of the hexagon boundary of the grid
+            const hexagonVertices = [
+                { x: 0, y: 4 },
+                { x: 3, y: 1 },
+                { x: 5, y: 1 },
+                { x: 6, y: 0 },
+                { x: 12, y: 0 },
+                { x: 13, y: 1 },
+                { x: 15, y: 1 },
+                { x: 18, y: 4 },
+                { x: 17, y: 5 },
+                { x: 18, y: 6 },
+                { x: 15, y: 9 },
+                { x: 13, y: 9 },
+                { x: 12, y: 10 },
+                { x: 6, y: 10 },
+                { x: 5, y: 9 },
+                { x: 3, y: 9 },
+                { x: 0, y: 6 },
+                { x: 1, y: 5 },
+                { x: 0, y: 4 }
+            ];
+
+            // Draw the white hexagonal background
+            drawHexagonBackground(ctx, hexagonVertices);
+        }
+
+        // Call this function in your main drawing routine
+        drawGridWithWhiteBackground(ctx);
+
         function drawLines(lineList) {
             lineList.forEach(line => {
                 const [[startRow, startCol], [endRow, endCol]] = line;
@@ -163,7 +211,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             // Draw the thin border (blue for regular, red for clickable)
             const isClickable = clickableMarkers.some(cm => cm.row === marker.row && cm.col === marker.col);
-            ctx.strokeStyle = isClickable ? 'red' : 'blue';
+            ctx.strokeStyle = isClickable ? 'red' : '#004995';
             ctx.lineWidth = 2;
             ctx.stroke();
         });
@@ -248,7 +296,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 ctx.fill();
 
                 // Draw the thin blue border
-                ctx.strokeStyle = 'blue';
+                ctx.strokeStyle = '#004995';
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
