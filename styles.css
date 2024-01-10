@@ -4,8 +4,56 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: #f0f0f0;
+    background-color: #D8DFE6;
     flex-direction: column;
+}
+
+.circle-container {
+  display: flex;
+  justify-content: center; /* Center the circles horizontally */
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+.circle-letter::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at 70% 50%, /* Position the gradient to the right side */
+    transparent 60%, /* Size of the transparent area, creating the crescent shape */
+    rgba(0, 0, 0, 0.3) 80% /* Start of the shadow */
+  );
+  border-radius: 50%; /* Make it round */
+  clip-path: inset(0 50% 0 0); /* Clip the right half of the pseudo-element */
+  z-index: 1; /* Place it above the blue background but below the text */
+}
+
+.circle-letter {
+  z-index: 2; /* Above the ::before pseudo-element */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background-color: #617687; /* Blue circle color */
+  color: #FFFFFF;
+  margin: 0 14px;
+  border-radius: 50%;
+  font-size: 52px;
+  user-select: text;
+  cursor: text;
+  box-shadow: 0 0 0 2px white, 0 0 0 9px black; /* 5px white rim and 10px black rim */ /* 5px black rim */
+}
+
+/* Style for text selection color */
+::selection {
+  background: #173A6A; /* Color when text is selected/highlighted */
+  color: #FFFFFF;
 }
 
 #yinshBoard {
@@ -15,7 +63,7 @@ body {
 
 p, h2, h3 {
     align-self: flex-start; /* Aligns this element to the start of the flex container */
-    padding-left: 60px; /* Adjust this value for the desired padding */
+    padding-left: 90px; /* Adjust this value for the desired padding */
     width: 100%; /* To ensure padding affects the positioning */
     box-sizing: border-box; /* To ensure padding is included in width */
 }
@@ -36,6 +84,7 @@ h3 {
 }
 
 #turnCounter, #markerCounter, #outcome {
+    margin-top: 0px;
     padding-left: 0px;
 }
 
