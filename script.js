@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let possibleMoves = [];
     let markers = [];
     let turnCount = 1; // Initialize turn counter
+    let markerCount = 0;
     let markerSequences = []; // Stores sequences of 5 or more markers
     let clickableMarkers = [];
     let selectMarkerState = false;
@@ -527,7 +528,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 let marker = sequenceToRemove[i];
                 internalBoard[marker.row][marker.col] = 0; // Remove marker from board
                 markers = markers.filter(m => !(m.row === marker.row && m.col === marker.col));
+
             }
+            markerCount -= 5;
+            updateMarkerDisplay();
+
             clickableMarkers = []; // Clear the clickable markers
             // Set the turn to the player whose markers were not just scored
 
@@ -653,6 +658,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // Flip markers along the path
         flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
+        markerCount ++;
+        updateMarkerDisplay();
 
         checkForMarkerSequences();
         let currentPlayerColor = isTurnWhite ? 'white' : 'black';
@@ -864,7 +871,9 @@ document.addEventListener("DOMContentLoaded", function() {
         currentPlayer = 1;
         ringCounter = { '1': 2, '-1': -2 };
         turnCount = 1;
+        markerCount = 0;
         updateTurnDisplay();
+        updateMarkerDisplay();
         updateOutcomeDisplay();
 
         // Clear the removed rings canvas
@@ -904,6 +913,12 @@ document.addEventListener("DOMContentLoaded", function() {
     function updateTurnDisplay() {
         const turnCounterElement = document.getElementById('turnCounter');
         turnCounterElement.innerHTML = `<strong>Turn:</strong> ${turnCount}`;
+    }
+
+    // Function to update the turn count display
+    function updateMarkerDisplay() {
+        const markerCounterElement = document.getElementById('markerCounter');
+        markerCounterElement.innerHTML = `<strong>Markers:</strong> ${markerCount}/51`;
     }
 
     // Function to update the outcome displayer
