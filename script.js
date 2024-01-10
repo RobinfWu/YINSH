@@ -223,9 +223,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (ring.number > 0 && playerToRemoveRing  === 1 || ring.number < 0 && playerToRemoveRing  === -1) {
                     // Draw a red border around the ring
                     ctx.strokeStyle = 'red';
-                    ctx.lineWidth = 3;
+                    ctx.lineWidth = radius;
                     ctx.beginPath();
-                    ctx.arc(ring.x, ring.y, radius + 3, 0, Math.PI * 2);
+                    ctx.arc(ring.x, ring.y, 3 * radius, 0, Math.PI * 2);
                     ctx.stroke();
                 }
             });
@@ -237,22 +237,22 @@ document.addEventListener("DOMContentLoaded", function() {
         if (hoverPos && hoverPos.isPotentialMove) {
             // First draw the black border
             ctx.beginPath();
-            ctx.arc(hoverPos.x, hoverPos.y, 8 * radius + 3, 0, Math.PI * 2); // The border circle is slightly larger
+            ctx.arc(hoverPos.x, hoverPos.y, 9 * radius, 0, Math.PI * 2); // The border circle is slightly larger
             ctx.strokeStyle = 'black'; // Color for the border
-            ctx.lineWidth = 2; // Width of the border
+            ctx.lineWidth = radius; // Width of the border
             ctx.stroke();
 
             ctx.beginPath();
-            ctx.arc(hoverPos.x, hoverPos.y, 8 * radius - 3, 0, Math.PI * 2); // The border circle is slightly smaller
+            ctx.arc(hoverPos.x, hoverPos.y, 7 * radius, 0, Math.PI * 2); // The border circle is slightly smaller
             ctx.strokeStyle = 'black'; // Color for the border
-            ctx.lineWidth = 2; // Width of the border
+            ctx.lineWidth = radius; // Width of the border
             ctx.stroke();
 
             // Draw grey ring around the potential move position
             ctx.beginPath();
             ctx.arc(hoverPos.x, hoverPos.y, 8 * radius, 0, Math.PI * 2);
             ctx.strokeStyle = 'grey';  // Permanent rings in white, hover effect in grey
-            ctx.lineWidth = 6;
+            ctx.lineWidth = (5 * radius / 2);
             ctx.stroke();
         } else {
             // Draw the hover effect
@@ -307,21 +307,21 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // First draw the black border
         ctx.beginPath();
-        ctx.arc(cx, cy, 8 * radius + 3, 0, Math.PI * 2); // The border circle is slightly larger
+        ctx.arc(cx, cy, 9 * radius, 0, Math.PI * 2); // The border circle is slightly larger
         ctx.strokeStyle = 'black'; // Color for the border
-        ctx.lineWidth = 2; // Width of the border
+        ctx.lineWidth = radius; // Width of the border
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(cx, cy, 8 * radius - 3, 0, Math.PI * 2); // The border circle is slightly smaller
+        ctx.arc(cx, cy, 7 * radius, 0, Math.PI * 2); // The border circle is slightly smaller
         ctx.strokeStyle = 'black'; // Color for the border
-        ctx.lineWidth = 2; // Width of the border
+        ctx.lineWidth = radius; // Width of the border
         ctx.stroke();
 
         ctx.beginPath();
         ctx.arc(cx, cy, 8 * radius, 0, Math.PI * 2);
         ctx.strokeStyle = ringColor;  // Permanent rings in white, hover effect in grey
-        ctx.lineWidth = 6;
+        ctx.lineWidth = (5 * radius / 2);
         ctx.stroke();
     }
 
@@ -837,21 +837,21 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // First draw the black border
         ctx.beginPath();
-        ctx.arc(cx, cy, 8 * radius + 3, 0, Math.PI * 2); // The border circle is slightly larger
+        ctx.arc(cx, cy, 9 * radius, 0, Math.PI * 2); // The border circle is slightly larger
         ctx.strokeStyle = 'black'; // Color for the border
-        ctx.lineWidth = 2; // Width of the border
+        ctx.lineWidth = radius; // Width of the border
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(cx, cy, 8 * radius - 3, 0, Math.PI * 2); // The border circle is slightly smaller
+        ctx.arc(cx, cy, 7 * radius, 0, Math.PI * 2); // The border circle is slightly smaller
         ctx.strokeStyle = 'black'; // Color for the border
-        ctx.lineWidth = 2; // Width of the border
+        ctx.lineWidth = radius; // Width of the border
         ctx.stroke();
 
         ctx.beginPath();
         ctx.arc(cx, cy, 8 * radius, 0, Math.PI * 2);
         ctx.strokeStyle = ringColor;  // Permanent rings in white, hover effect in grey
-        ctx.lineWidth = 6;
+        ctx.lineWidth = (5 * radius / 2);
         ctx.stroke();
     }
 
@@ -864,7 +864,11 @@ document.addEventListener("DOMContentLoaded", function() {
         clickableMarkers = [];
         selectMarkerState = false;
         removeRingState = false;
+        selectedRing = null;
+        hoverPos = null;
         playerToRemoveRing = null;
+        removeRingAtStartOfTurn = null;
+        possibleMoves = []
         score = { white: 0, black: 0 };
         outcome = '';
         gameOver = false;
