@@ -801,30 +801,5 @@ document.addEventListener("DOMContentLoaded", function() {
         randomizeRings();
     });
 
-        // Function to print the board to the console
-    function printBoard() {
-        internalBoard.forEach(row => {
-            let formattedRow = '';
-            let cssStyles = [];
-
-            row.forEach(cell => {
-                if (cell === 9) {
-                    formattedRow += '   '; // Replace 9 with spaces
-                } else if (cell > 0) {
-                    formattedRow += '%c' + cell + '%c '; // Positive numbers in green
-                    cssStyles.push("color: green;", ""); // Style for positive numbers
-                } else if (cell < 0){
-                    formattedRow += '%c' + (-cell) + '%c '; // Negative numbers in red, turned positive
-                    cssStyles.push("color: red;", ""); // Style for negative numbers
-                } else {
-                    formattedRow += '%c' + (-cell) + '%c '; // Negative numbers in red, turned positive
-                    cssStyles.push("color: black;", ""); // Style for negative numbers
-                }
-            });
-
-            console.log(formattedRow, ...cssStyles);
-        });
-    }
-
     drawGrid();
 });
