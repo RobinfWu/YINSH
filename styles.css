@@ -156,6 +156,12 @@ p:not(#turnCounter):not(#markerCounter):not(#outcome) {
     /* ... other styles ... */
 }
 
+/* Apply max-width to all <p> elements except those with specified ids */
+figcaption {
+    max-width: 800px; /* Adjust the value as needed */
+    /* ... other styles ... */
+}
+
 .content-box {
     background-color: white; /* Set the background to white */
     margin: 20px 90px; /* Add some space around the box */
