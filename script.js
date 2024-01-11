@@ -236,6 +236,7 @@ document.addEventListener("DOMContentLoaded", function() {
             currentPlayer *= -1; // Switch player
             turnCount++; // Increment turn count
             updateTurnDisplay(); // Update the display
+            playPiecePlacedSound();
             drawGrid(); // Redraw the grid with the new ring
         } else if (turnCount > 10) {
             console.log("Rings can no longer be placed. Move existing rings.");
@@ -580,6 +581,7 @@ document.addEventListener("DOMContentLoaded", function() {
         updateTurnDisplay(); // Update the display
 
         checkForMarkerSequences();
+        playPiecePlacedSound();
         drawGrid();
         if (selectMarkerState) {
            removeRingAtStartOfTurn = true;
@@ -713,7 +715,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function randomizeRings() {
         // Reset the game state
-        internalBoard.forEach(row => row.fill(0, 0, row.length).fill(9, row.length, 11));
+        internalBoard.forEach(row => {
+            for (let i = 0; i < row.length; i++) {
+                if (row[i] !== 9) {
+                    row[i] = 0;
+                }
+            }
+        });
         rings = [];
         markers = [];
         markerSequences = [];
@@ -766,6 +774,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         turnCount = 11; // Update turn count to reflect that all rings are placed
         updateTurnDisplay();
+        playPiecePlacedSound();
         drawGrid();
     }
 

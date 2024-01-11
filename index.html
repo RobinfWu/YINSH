@@ -8,6 +8,13 @@
         <link rel="stylesheet" href="styles.css">
     </head>
     <body>
+        <audio id="placeSound" src="sounds/move-self.mp3" preload="auto"></audio>
+        <script>
+            function playPiecePlacedSound() {
+                var sound = document.getElementById("placeSound");
+                sound.play();
+            }
+        </script>
         <div class="circle-container">
           <span class="circle-letter">Y</span>
           <span class="circle-letter">I</span>
