@@ -179,9 +179,5 @@ figcaption {
         padding-left: 20px; /* Smaller padding for mobile */
         font-size: 14px; /* Adjust font size for mobile */
     }
-    #yinshBoard {
-        width: 100%; /* Full width on mobile */
-        max-width: 570px; /* Maximum width */
-    }
     /* Add other mobile-specific styles here */
 }
