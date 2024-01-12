@@ -581,8 +581,6 @@ document.addEventListener("DOMContentLoaded", function() {
             flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
             markerCount ++;
             updateMarkerDisplay();
-            saveCurrentState();
-            printMoveHistory();
             checkForMarkerSequences();
             let currentPlayerColor = isTurnWhite ? 'white' : 'black';
             clickableMarkers = clickableMarkers.filter(sequence => sequence.color === currentPlayerColor);
