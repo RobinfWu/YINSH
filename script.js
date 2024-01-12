@@ -628,7 +628,6 @@ document.addEventListener("DOMContentLoaded", function() {
     function selectRing(row, col) {
         if (selectMarkerState || removeRingState) {
             console.log("Select a marker sequence first or remove a ring first");
-            console.log(currentPlayer)
             return;
         }
 
