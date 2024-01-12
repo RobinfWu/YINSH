@@ -607,10 +607,8 @@ document.addEventListener("DOMContentLoaded", function() {
             currentPlayer *= -1;
             turnCount++; // Increment turn count
             updateTurnDisplay(); // Update the display
-
             checkForMarkerSequences();
             playPiecePlacedSound();
-
             drawGrid();
         });
 
