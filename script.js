@@ -311,8 +311,9 @@ document.addEventListener("DOMContentLoaded", function() {
         const mouseColumn = (event.clientX - rect.left) * scaleX;  // scale mouse coordinates after they have
         const mouseRow = (event.clientY - rect.top) * scaleY;   // been adjusted to be relative to element
 
-       // Convert mouse coordinates to grid indices
-        const adjustedColumn = Math.floor(mouseColumn / horizontalSpacing) - 1;
+        const cellPadding = gridSize * 0.03;
+        // Convert mouse coordinates to grid indices with padding
+        const adjustedColumn = Math.floor((mouseColumn + cellPadding) / horizontalSpacing) - 1;
         const adjustedRow = Math.floor(mouseRow / verticalSpacing) - 1;
 
         // Check if the click is within the bounds of the board
@@ -595,6 +596,8 @@ document.addEventListener("DOMContentLoaded", function() {
             selectedRing = null;
             possibleMoves = [];
 
+            playPiecePlacedSound();
+
             if (selectMarkerState && clickableMarkers.length > 0) {
                 drawGrid();
                 return;
@@ -606,7 +609,6 @@ document.addEventListener("DOMContentLoaded", function() {
             turnCount++; // Increment turn count
             updateTurnDisplay(); // Update the display
             checkForMarkerSequences();
-            playPiecePlacedSound();
             drawGrid();
         });
 
