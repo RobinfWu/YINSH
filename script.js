@@ -18,7 +18,6 @@ document.addEventListener("DOMContentLoaded", function() {
     let outcome = ''
     let gameOver = false;
 
-
     function drawGrid() {
         ctx.fillStyle = 'black'; // Change the color if needed
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -400,7 +399,6 @@ document.addEventListener("DOMContentLoaded", function() {
             printBoard();
         }
     }
-
 
     function checkForMarkerRemoval(row, col) {
         // Check if the clicked position is a clickable marker
