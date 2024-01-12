@@ -566,6 +566,13 @@ document.addEventListener("DOMContentLoaded", function() {
         // Get the ring number from the original position
         let ringNumber = internalBoard[selectedRing.row][selectedRing.col];
 
+        // Remove the ring from the original position
+        internalBoard[selectedRing.row][selectedRing.col] = isTurnWhite ? 1 : -1;
+        let ringIndex = rings.findIndex(ring => ring.x === selectedRing.col * horizontalSpacing + horizontalSpacing / 2 + margin && ring.y === selectedRing.row * verticalSpacing + verticalSpacing / 2 + margin);
+        if (ringIndex !== -1) {
+            rings.splice(ringIndex, 1);
+        }
+        
         let startX = selectedRing.col * horizontalSpacing + horizontalSpacing / 2 + margin;
         let startY = selectedRing.row * verticalSpacing + verticalSpacing / 2 + margin;
         let endX = newCol * horizontalSpacing + horizontalSpacing / 2 + margin;
