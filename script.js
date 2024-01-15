@@ -62,26 +62,23 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Draw Marker for Hover Effect
     function drawHoverMarker(mouseX, mouseY) {
-        // Logic for drawing hover ring
-        let isTurnWhite = turnCount % 2 !== 0;
         let isTurnBlack = turnCount % 2 === 0;
-        // Determine the color based on the ring number
-        let markerColor;
-        if (isTurnWhite) {
-            markerColor = 'white';
-        }
-        else if (isTurnBlack) {
-            markerColor = 'black'
-        }
 
-        // Set color for the filled circle based on the current player
-        ctx.fillStyle = markerColor;
+        // Gradient for a 3D effect on the hover marker
+        let startGradientColor = isTurnBlack ? 'black' : '#E2E2E2'; // Lighter for white, darker for black
+        let endGradientColor = isTurnBlack ? '#212121' : 'white';
+        let gradient = ctx.createRadialGradient(mouseX, mouseY, radius, mouseX, mouseY, 6 * radius);
+        gradient.addColorStop(0, startGradientColor);
+        gradient.addColorStop(1, endGradientColor);
+
+        // Draw the hover marker with gradient fill
+        ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.arc(mouseX, mouseY, 6 * radius, 0, Math.PI * 2);
         ctx.fill();
 
         // Draw the thin blue border
-        ctx.strokeStyle = '#004995';
+        ctx.strokeStyle = '#004995'; // Blue color for the border
         ctx.lineWidth = 2;
         ctx.stroke();
     }
@@ -171,6 +168,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 markers.push(markerPosition);
                 markerCount++;
                 updateMarkerDisplay();
+                playPiecePlacedSound();
             }
         }
     }
@@ -247,7 +245,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function animateRingMove(startX, startY, endX, endY, ringNumber, callback) {
-        const animationDuration = 300; // Duration in milliseconds
+        const animationDuration = 250; // Duration in milliseconds
         const startTime = Date.now();
 
         function drawFrame() {
@@ -521,41 +519,16 @@ document.addEventListener("DOMContentLoaded", function() {
         // Draw white removed rings along the bottom left
         let posX = bottomLeftStartX + radius; // Start from the left edge
         for (let i = 0; i < score.white; i++) {
-            drawRingOnRemovedCanvas(ctx, posX, bottomLeftStartY, 1); // 1 for white ring
+            gameBoard.drawRing(posX, bottomLeftStartY, 2); // 2 for white ring
             posX += spacing; // Move to the right for the next ring
         }
 
         // Draw black removed rings along the upper right
         posX = upperRightStartX - radius; // Start from the right edge
         for (let i = 0; i < score.black; i++) {
-            drawRingOnRemovedCanvas(ctx, posX, upperRightStartY, -1); // -1 for black ring
+            gameBoard.drawRing(posX, upperRightStartY, -2); // -2 for black ring
             posX -= spacing; // Move to the left for the next ring
         }
-    }
-
-    function drawRingOnRemovedCanvas(ctx, cx, cy, ringNumber) {
-        // Draw the ring on the provided context (ctx)
-        // Define ring color based on ringNumber
-        let ringColor = ringNumber > 0 ? 'white' : 'black';
-
-        // First draw the black border
-        ctx.beginPath();
-        ctx.arc(cx, cy, 9 * radius, 0, Math.PI * 2); // The border circle is slightly larger
-        ctx.strokeStyle = 'black'; // Color for the border
-        ctx.lineWidth = radius; // Width of the border
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, 7 * radius, 0, Math.PI * 2); // The border circle is slightly smaller
-        ctx.strokeStyle = 'black'; // Color for the border
-        ctx.lineWidth = radius; // Width of the border
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, 8 * radius, 0, Math.PI * 2);
-        ctx.strokeStyle = ringColor;  // Permanent rings in white, hover effect in grey
-        ctx.lineWidth = (5 * radius / 2);
-        ctx.stroke();
     }
 
     function updateGameState() {

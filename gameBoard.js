@@ -7,6 +7,7 @@ class GameBoard {
         this.radius = Math.min(this.verticalSpacing, this.horizontalSpacing) * 0.1; // Radius of dots and rings
         this.margin = margin; // Margin around the grid
     }
+
     drawGridLines() {
         // Drawing logic for vertical, diagonal, and anti-diagonal lines
         // Set the style for the diagonal lines
@@ -22,6 +23,7 @@ class GameBoard {
         // Draw the anti-diagonal lines
         this.drawLines(antiDiagonalGridLists);
     }
+
     drawLines(lineList) {
         lineList.forEach(line => {
             const [[startRow, startCol], [endRow, endCol]] = line;
@@ -96,34 +98,40 @@ class GameBoard {
 
     // Draw an individual ring
     drawRing(cx, cy, ringNumber) {
-        // Determine the color based on the ring number
         let ringColor;
+        let startGradientColor;
         if (ringNumber === 2) {
             ringColor = 'white';
-        }
-        else if (ringNumber === -2) {
-            ringColor = 'black'
+            startGradientColor = '#f0f0f0';
+        } else if (ringNumber === -2) {
+            ringColor = 'black';
+            startGradientColor = 'gray';
         }
 
-        // First draw the black border
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, 9 * this.radius, 0, Math.PI * 2); // The border circle is slightly larger
-        this.ctx.strokeStyle = 'black'; // Color for the border
-        this.ctx.lineWidth = this.radius; // Width of the border
-        this.ctx.stroke();
+        // Shadow for depth
+        this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowOffsetX = 2;
+        this.ctx.shadowOffsetY = 2;
 
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, 7 * this.radius, 0, Math.PI * 2); // The border circle is slightly smaller
-        this.ctx.strokeStyle = 'black'; // Color for the border
-        this.ctx.lineWidth = this.radius; // Width of the border
-        this.ctx.stroke();
+        // Gradient for a 3D effect
+        let gradient = this.ctx.createRadialGradient(cx, cy, this.radius, cx, cy, 9 * this.radius);
+        gradient.addColorStop(0, startGradientColor);
+        gradient.addColorStop(1, ringColor);
 
         this.ctx.beginPath();
         this.ctx.arc(cx, cy, 8 * this.radius, 0, Math.PI * 2);
-        this.ctx.strokeStyle = ringColor;  // Permanent rings in white, hover effect in grey
+        this.ctx.strokeStyle = gradient;  // Permanent rings in white, hover effect in grey
         this.ctx.lineWidth = (5 * this.radius / 2);
         this.ctx.stroke();
+
+        // Reset shadow properties
+        this.ctx.shadowColor = 'transparent';
+        this.ctx.shadowBlur = 0;
+        this.ctx.shadowOffsetX = 0;
+        this.ctx.shadowOffsetY = 0;
     }
+
 
     // Highlight rings for removal if in remove ring state
     drawRingsForRemoval(rings, currentPlayer) {
@@ -140,17 +148,38 @@ class GameBoard {
     }
 
     drawMarkers(markers, clickableMarkers = []) {
+        // Shadow for depth
+        this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowOffsetX = 2;
+        this.ctx.shadowOffsetY = 2;
+
         markers.forEach(marker => {
-            this.ctx.fillStyle = marker.color !== 1 ? 'black' : 'white';
+            // Gradient for a 3D effect on markers
+            let startGradientColor = marker.color !== 1 ? 'black' : '#E2E2E2'; // Darker for black markers, lighter for white markers
+            let endGradientColor = marker.color !== 1 ? '#212121' : 'white';
+            let gradient = this.ctx.createRadialGradient(marker.x, marker.y, this.radius, marker.x, marker.y, 6 * this.radius);
+            gradient.addColorStop(0, startGradientColor);
+            gradient.addColorStop(1, endGradientColor);
+
+            // Drawing the marker with gradient
             this.ctx.beginPath();
             this.ctx.arc(marker.x, marker.y, 6 * this.radius, 0, Math.PI * 2);
+            this.ctx.fillStyle = gradient;
             this.ctx.fill();
+
             // Draw the thin border (blue for regular, red for clickable)
             const isClickable = clickableMarkers.some(cm => cm.row === marker.row && cm.col === marker.col);
             this.ctx.strokeStyle = isClickable ? 'red' : '#004995';
             this.ctx.lineWidth = 2;
             this.ctx.stroke();
         });
+
+        // Reset shadow properties
+        this.ctx.shadowColor = 'transparent';
+        this.ctx.shadowBlur = 0;
+        this.ctx.shadowOffsetX = 0;
+        this.ctx.shadowOffsetY = 0;
     }
 
     // Draw the entire board
