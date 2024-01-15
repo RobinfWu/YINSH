@@ -300,7 +300,7 @@ document.addEventListener("DOMContentLoaded", function() {
            updateOutcomeDisplay();
            gameOver = true;
        }
-
+       updateDebugDisplay();
        drawGrid();
     }
 
@@ -779,6 +779,12 @@ document.addEventListener("DOMContentLoaded", function() {
     function updateOutcomeDisplay() {
         const outcomeElement = document.getElementById('outcome');
         outcomeElement.textContent = `${outcome}`;
+    }
+
+    function updateDebugDisplay() {
+        const debugElement = document.getElementById('debug');
+        let markersString = markers.map(marker => JSON.stringify(marker)).join('\n');
+        debugElement.textContent = markersString;
     }
 
     updateUndoButtonState();
