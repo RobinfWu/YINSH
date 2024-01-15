@@ -240,32 +240,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    function animateRingMove(startX, startY, endX, endY, ringNumber, callback) {
-        const animationDuration = 300; // Duration in milliseconds
-        const startTime = Date.now();
-
-        function drawFrame() {
-            let currentTime = Date.now();
-            let progress = Math.min((currentTime - startTime) / animationDuration, 1);
-
-            let currentX = startX + (endX - startX) * progress;
-            let currentY = startY + (endY - startY) * progress;
-
-            // Clear the canvas and redraw everything except the moving ring
-            drawGrid(); // You may need to modify drawGrid to optionally exclude the moving ring
-
-            // Draw the moving ring at its current position
-            gameBoard.drawRing(currentX, currentY, ringNumber);
-
-            if (progress < 1) {
-                window.requestAnimationFrame(drawFrame);
-            } else {
-                callback(); // Call the callback function once the animation is complete
-            }
-        }
-
-        drawFrame();
-    }
     function moveRing(newRow, newCol) {
         if (!possibleMoves.some(point => point[0] === newRow && point[1] === newCol)) {
             console.log("Invalid move");
@@ -280,62 +254,54 @@ document.addEventListener("DOMContentLoaded", function() {
             rings.splice(pickedRing, 1);
         }
 
-        let startX = selectedRing.col * horizontalSpacing + horizontalSpacing / 2 + margin;
-        let startY = selectedRing.row * verticalSpacing + verticalSpacing / 2 + margin;
-        let endX = newCol * horizontalSpacing + horizontalSpacing / 2 + margin;
-        let endY = newRow * verticalSpacing + verticalSpacing / 2 + margin;
-
-       animateRingMove(startX, startY, endX, endY, ringNumber, function() {
-           internalBoard[newRow][newCol] = ringNumber;
-           rings.push({
-               x: newCol * horizontalSpacing + horizontalSpacing / 2 + margin,
-               y: newRow * verticalSpacing + verticalSpacing / 2 + margin,
-               number: ringNumber
-           });
-           flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
-
-           let currentPlayer = (turnCount % 2 !== 0) ? 1 : -1;
-           // Check if there are sequences to remove
-           if (hasSequencesToRemove((currentPlayer))) {
-               selectSequence = true;
-               gameState = 'selectingSequence';
-           } else if (hasSequencesToRemove(-currentPlayer)) {
-               gameState = 'removingSequenceAtStart';
-               turnCount++;
-               updateTurnDisplay();
-           } else {
-               // Only increment turnCount if there are no sequences to remove
-               turnCount++;
-               updateTurnDisplay();
-           }
-
-           selectSequenceAtStart = false;
-           selectedRing = null;
-           possibleMoves = [];
-
-           updateTurnDisplay();
-
-           gameBoard.drawRings(rings);
-           gameBoard.drawMarkers(markers);
-           playPiecePlacedSound();
-
-           document.getElementById('undoButton').disabled = false;
-
-           if (markers.length === 51) {
-               if (score.white > score.black) {
-                   outcome = 'Outcome: White wins. All 51 markers are used up.';
-               } else if (score.black > score.white) {
-                   outcome = 'Outcome: Black wins. All 51 markers are used up.';
-               } else {
-                   outcome = 'Outcome: A Tie. All 51 markers are used up.';
-               }
-               updateOutcomeDisplay();
-               gameOver = true;
-           }
-
-           drawGrid();
-           // printBoard();
+       internalBoard[newRow][newCol] = ringNumber;
+       rings.push({
+           x: newCol * horizontalSpacing + horizontalSpacing / 2 + margin,
+           y: newRow * verticalSpacing + verticalSpacing / 2 + margin,
+           number: ringNumber
        });
+       flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
+
+       let currentPlayer = (turnCount % 2 !== 0) ? 1 : -1;
+       // Check if there are sequences to remove
+       if (hasSequencesToRemove((currentPlayer))) {
+           selectSequence = true;
+           gameState = 'selectingSequence';
+       } else if (hasSequencesToRemove(-currentPlayer)) {
+           gameState = 'removingSequenceAtStart';
+           turnCount++;
+           updateTurnDisplay();
+       } else {
+           // Only increment turnCount if there are no sequences to remove
+           turnCount++;
+           updateTurnDisplay();
+       }
+
+       selectSequenceAtStart = false;
+       selectedRing = null;
+       possibleMoves = [];
+
+       updateTurnDisplay();
+
+       gameBoard.drawRings(rings);
+       gameBoard.drawMarkers(markers);
+       playPiecePlacedSound();
+
+       document.getElementById('undoButton').disabled = false;
+
+       if (markers.length === 51) {
+           if (score.white > score.black) {
+               outcome = 'Outcome: White wins. All 51 markers are used up.';
+           } else if (score.black > score.white) {
+               outcome = 'Outcome: Black wins. All 51 markers are used up.';
+           } else {
+               outcome = 'Outcome: A Tie. All 51 markers are used up.';
+           }
+           updateOutcomeDisplay();
+           gameOver = true;
+       }
+
+       drawGrid();
     }
 
     function hasSequencesToRemove(currentPlayerColor) {
