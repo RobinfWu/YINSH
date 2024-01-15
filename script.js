@@ -1,247 +1,89 @@
 document.addEventListener("DOMContentLoaded", function() {
-    let currentPlayer = 1; // 1 for white, -1 for black
-    let ringCounter = { '1': 2, '-1': -2 }; // Starting values for ring numbers
-    let selectedRing = null;
-    let hoverPos = null; // Stores the position of the hover effect
+    const canvas = document.getElementById('yinshBoard');
+    const ctx = canvas.getContext('2d');
+
+    // Assuming the canvas is square and its size is based on the smallest viewport dimension
+    const canvasSize = Math.min(window.innerWidth, window.innerHeight) * 0.7;
+    const margin = canvasSize * 0.05; // 5% margin, for example
+    const gridSize = canvasSize - margin * 2; // Total grid size after subtracting margins
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
+    // The vertical and horizontal spacings now need to account for the margin
+    const verticalSpacing = gridSize / 19;
+    const horizontalSpacing = gridSize / 11;
+    // Adjust the radius relative to cell size
+    const radius = Math.min(verticalSpacing, horizontalSpacing) * 0.1;
+
+    const gameBoard = new GameBoard(ctx, gridSize, margin);
+
     let rings = []; // Stores the positions of all placed rings
-    let possibleMoves = [];
-    let markers = [];
     let turnCount = 1; // Initialize turn counter
+    let hoverPos = null; // Stores the position of the hover effect
+    let selectedRing = null; // Stores the position of the selected ring
+    let possibleMoves = []; // Stores the possible moves for the current turn
+
     let markerCount = 0;
-    let markerSequences = []; // Stores sequences of 5 or more markers
-    let clickableMarkers = [];
-    let selectMarkerState = false;
-    let removeRingState = false;
-    let playerToRemoveRing = null; // This will be set to 1 for white or -1 for black
-    let removeRingAtStartOfTurn = null;
+    let markers = []; // Stores the positions of all markers
+    let markerSequences = []; // Stores the sequences of 5 in a row
+    let clickableMarkers = []
+
     let score = { white: 0, black: 0 };
-    let outcome = ''
+    let outcome = '';
+    let gameState = 'placingRings'; // Can be 'placingRings', 'selectingSequence', 'movingRing', or 'removingRing'
     let gameOver = false;
+    let history = []; // Stores past game states
+    let future = []; // Stores undone game states for redo
+
+    let selectSequence = false;
+    let selectSequenceAtStart = false;
 
     function drawGrid() {
-        ctx.fillStyle = 'black'; // Change the color if needed
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        gameBoard.draw(rings, markers, possibleMoves, clickableMarkers);
 
-        function drawHexagonBackground(ctx, vertices) {
-            ctx.beginPath();
-            const startY = vertices[0].x * verticalSpacing + verticalSpacing / 2 + margin;
-            const startX = vertices[0].y * horizontalSpacing + horizontalSpacing / 2 + margin;
-            ctx.moveTo(startX, startY);
-
-            for (let i = 1; i < vertices.length; i++) {
-                const y = vertices[i].x * verticalSpacing + verticalSpacing / 2 + margin;
-                const x = vertices[i].y * horizontalSpacing + horizontalSpacing / 2 + margin;
-                ctx.lineTo(x, y);
-            }
-
-            ctx.closePath(); // Closes the path to the starting point to form a shape
-            ctx.fillStyle = '#C3D0D8';
-            ctx.fill();
-        }
-
-        function drawGridWithWhiteBackground(ctx) {
-            // Draw the white hexagonal background
-            drawHexagonBackground(ctx, hexagonVertices);
-        }
-
-        // Call this function in your main drawing routine
-        drawGridWithWhiteBackground(ctx);
-
-        function drawLines(lineList) {
-            lineList.forEach(line => {
-                const [[startRow, startCol], [endRow, endCol]] = line;
-
-                // Translate grid indices to canvas coordinates
-                const startX = startCol * horizontalSpacing + horizontalSpacing / 2 + margin;
-                const startY = startRow * verticalSpacing + verticalSpacing / 2 + margin;
-                const endX = endCol * horizontalSpacing + horizontalSpacing / 2 + margin;
-                const endY = endRow * verticalSpacing + verticalSpacing / 2 + margin;
-
-                // Draw the line on the canvas
-                ctx.beginPath();
-                ctx.moveTo(startX, startY);
-                ctx.lineTo(endX, endY);
-                ctx.stroke();
-            });
-        }
-
-        // Set the style for the diagonal lines
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 1;
-
-        // Draw the vertical lines
-        drawLines(verticalGridLists);
-
-        // Draw the diagonal lines
-        drawLines(diagonalGridLists);
-
-        // Draw the anti-diagonal lines
-        drawLines(antiDiagonalGridLists);
-
-        // Loop over each row in the BOARD_TEMPLATE
-        BOARD_TEMPLATE.forEach((columns, row) => {
-            // Loop over each column index in the current row
-            columns.forEach(column => {
-                // Calculate the x and y position for each dot, based on the index
-                // and account for the margin
-                const x = column * horizontalSpacing + horizontalSpacing / 2 + margin;
-                const y = row * verticalSpacing + verticalSpacing / 2 + margin;
-
-                if (possibleMoves.some(point => point[0] === row && point[1] === column)) {
-                    ctx.fillStyle = 'red'; // Set fill style for red circles
-                } else {
-                    ctx.fillStyle = 'black'; // Set fill style for default circles
-                }
-
-                // Draw the dot
-                ctx.beginPath();
-                ctx.arc(x, y, radius, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        });
-
-        // Draw markers
-        markers.forEach(marker => {
-            ctx.fillStyle = marker.color;
-            ctx.beginPath();
-            ctx.arc(marker.x, marker.y, 6 * radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Draw the thin border (blue for regular, red for clickable)
-            const isClickable = clickableMarkers.some(cm => cm.row === marker.row && cm.col === marker.col);
-            ctx.strokeStyle = isClickable ? 'red' : '#004995';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        });
-
-        // Highlight rings for removal if in remove ring state
-        if (removeRingState) {
-            rings.forEach(ring => {
-                if (ring.number > 0 && playerToRemoveRing  === 1 || ring.number < 0 && playerToRemoveRing  === -1) {
-                    // Draw a red border around the ring
-                    ctx.strokeStyle = 'red';
-                    ctx.lineWidth = radius;
-                    ctx.beginPath();
-                    ctx.arc(ring.x, ring.y, 3 * radius, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-            });
+        if (gameState === 'removingRing') {
+            gameBoard.drawRingsForRemoval(rings, (turnCount % 2 !== 0) ? 1 : -1);
         }
 
         drawRemovedRings();
 
-        // Draw the hover effect for potential moves
-        if (hoverPos && hoverPos.isPotentialMove) {
-            // First draw the black border
-            ctx.beginPath();
-            ctx.arc(hoverPos.x, hoverPos.y, 9 * radius, 0, Math.PI * 2); // The border circle is slightly larger
-            ctx.strokeStyle = 'black'; // Color for the border
-            ctx.lineWidth = radius; // Width of the border
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(hoverPos.x, hoverPos.y, 7 * radius, 0, Math.PI * 2); // The border circle is slightly smaller
-            ctx.strokeStyle = 'black'; // Color for the border
-            ctx.lineWidth = radius; // Width of the border
-            ctx.stroke();
-
-            // Draw grey ring around the potential move position
-            ctx.beginPath();
-            ctx.arc(hoverPos.x, hoverPos.y, 8 * radius, 0, Math.PI * 2);
-            ctx.strokeStyle = 'grey';  // Permanent rings in white, hover effect in grey
-            ctx.lineWidth = (5 * radius / 2);
-            ctx.stroke();
-        } else {
-            // Draw the hover effect
-            if (hoverPos) {
-                let ringNumberAtHover = internalBoard[hoverPos.row][hoverPos.col];
-                if (ringNumberAtHover != 0 && !selectMarkerState) {
-                    drawRing(hoverPos.x, hoverPos.y, ringNumberAtHover, true);
-                } else if (turnCount <= 11) {
-                    drawRing(hoverPos.x, hoverPos.y, 0, true);
-                }
+        if (hoverPos) {
+            let ringNumberAtHover = internalBoard[hoverPos.row][hoverPos.col];
+            let isTurnWhite = turnCount % 2 !== 0;
+            let isTurnBlack = turnCount % 2 === 0;
+            let isPlayerRing = (isTurnWhite && ringNumberAtHover > 0) || (isTurnBlack && ringNumberAtHover < 0);
+            // Drawing hovering effect during ring placement stage
+            if (ringNumberAtHover === 0 && turnCount < 11) {
+                gameBoard.drawRing(hoverPos.x, hoverPos.y, turnCount % 2 !== 0 ? 2 : -2);
+            } else if (ringNumberAtHover !== 0 && turnCount >= 11 && isPlayerRing){ // Drawing hovering effect for markers
+                drawHoverMarker(hoverPos.x, hoverPos.y);
             }
         }
-
-        // Draw all permanent rings
-        rings.forEach(ring => {
-            drawRing(ring.x, ring.y, ring.number, false);
-        });
     }
 
-    // Function to draw the hover effect or ring
-    function drawRing(cx, cy, ringNumber = 0, isHovering = false) {
+    // Draw Marker for Hover Effect
+    function drawHoverMarker(mouseX, mouseY) {
+        // Logic for drawing hover ring
         let isTurnWhite = turnCount % 2 !== 0;
         let isTurnBlack = turnCount % 2 === 0;
         // Determine the color based on the ring number
-        let ringColor;
-        if (ringNumber === 0 && isHovering) { // Hover effect
-            // During the ring placement stage, show the hovering ring in the player's color
-            ringColor = isTurnWhite? 'white' : 'black';
-        } else {
-            ringColor = ringNumber > 0 ? 'white' : 'black'; // Permanent rings
+        let markerColor;
+        if (isTurnWhite) {
+            markerColor = 'white';
+        }
+        else if (isTurnBlack) {
+            markerColor = 'black'
         }
 
-        // Adjust hover effect condition
-        if (isHovering && !selectMarkerState && !removeRingState && turnCount > 10) {
-            // This checks if we're not in a state of selecting a marker or removing a ring
-            let isPlayerRing = (isTurnWhite && ringNumber > 0) || (isTurnBlack && ringNumber < 0);
-            if (isPlayerRing) {
-                // Set color for the filled circle based on the current player
-                ctx.fillStyle = isTurnWhite ? 'white' : 'black';
-                ctx.beginPath();
-                ctx.arc(cx, cy, 6 * radius, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Draw the thin blue border
-                ctx.strokeStyle = '#004995';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                return; // Skip drawing the rest if it's just a hover effect
-            }
-        }
-
-        // First draw the black border
+        // Set color for the filled circle based on the current player
+        ctx.fillStyle = markerColor;
         ctx.beginPath();
-        ctx.arc(cx, cy, 9 * radius, 0, Math.PI * 2); // The border circle is slightly larger
-        ctx.strokeStyle = 'black'; // Color for the border
-        ctx.lineWidth = radius; // Width of the border
+        ctx.arc(mouseX, mouseY, 6 * radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw the thin blue border
+        ctx.strokeStyle = '#004995';
+        ctx.lineWidth = 2;
         ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, 7 * radius, 0, Math.PI * 2); // The border circle is slightly smaller
-        ctx.strokeStyle = 'black'; // Color for the border
-        ctx.lineWidth = radius; // Width of the border
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, 8 * radius, 0, Math.PI * 2);
-        ctx.strokeStyle = ringColor;  // Permanent rings in white, hover effect in grey
-        ctx.lineWidth = (5 * radius / 2);
-        ctx.stroke();
-    }
-
-    // Function to add a ring to the internal board representation
-    function addRingToBoard(row, col) {
-        // Count the number of rings already placed
-        let totalRingsPlaced = rings.length;
-
-        // Check if it's within the first ten turns and the selected spot is empty
-        if (turnCount <= 10 && internalBoard[row] && internalBoard[row][col] === 0) {
-            internalBoard[row][col] = ringCounter[currentPlayer];
-            rings.push({ x: col * horizontalSpacing + horizontalSpacing / 2 + margin, y: row * verticalSpacing + verticalSpacing / 2 + margin, number: ringCounter[currentPlayer] });
-            ringCounter[currentPlayer] += currentPlayer; // Increment or decrement the ring number
-            currentPlayer *= -1; // Switch player
-            turnCount++; // Increment turn count
-            updateTurnDisplay(); // Update the display
-            playPiecePlacedSound();
-            drawGrid(); // Redraw the grid with the new ring
-        } else if (turnCount > 10) {
-            console.log("Rings can no longer be placed. Move existing rings.");
-        } else if (totalRingsPlaced >= 10) {
-            console.log("All rings placed. No further placement allowed.");
-        }
     }
 
     function isWithinCircle(mouseX, mouseY, circleX, circleY, radius) {
@@ -253,8 +95,6 @@ document.addEventListener("DOMContentLoaded", function() {
     // Update the hover effect based on the mouse position
     function updateHoverEffect(mouseX, mouseY) {
         hoverPos = null; // Reset hoverPos
-        let isTurnWhite = turnCount % 2 !== 0;
-        let isTurnBlack = turnCount % 2 === 0;
 
         // Check against the BOARD_TEMPLATE
         BOARD_TEMPLATE.forEach((columns, row) => {
@@ -265,402 +105,71 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 if (isWithinCircle(mouseX, mouseY, cx, cy, radius)) {
                     // Check if the position corresponds to the current player's ring
-                    let ringValue = internalBoard[row][column];
-                    if (turnCount > 10 && ((isTurnWhite && ringValue > 0) || (isTurnBlack && ringValue < 0))) {
-                        hoverPos = { x: cx, y: cy, row: row, col: column };
-                    } else if (turnCount <= 10) {
-                        hoverPos = { x: cx, y: cy, row: row, col: column };
-                    }
-
-                    // If there is a hover position, draw the hover ring
+                    hoverPos = { x: cx, y: cy, row: row, col: column };
                     if (hoverPos) {
-                        drawRing(hoverPos.x, hoverPos.y, 0, true); // Pass true for isHovering
+                        // If there is a hover position, draw the hover marker
+                        drawHoverMarker(hoverPos.x, hoverPos.y); // Pass true for isHovering
                     }
                 }
             });
-        });
-
-        possibleMoves.forEach(move => {
-            const moveX = move[1] * horizontalSpacing + horizontalSpacing / 2 + margin;
-            const moveY = move[0] * verticalSpacing + verticalSpacing / 2 + margin;
-            if (isWithinCircle(mouseX, mouseY, moveX, moveY, radius)) {
-                hoverPos = { x: moveX, y: moveY, isPotentialMove: true };
-            }
         });
 
         drawGrid(); // Redraw the grid
     }
 
-    function onMouseMove(event) {
-        // Calculate the mouse position within the canvas
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;    // relationship bitmap vs. element for X
-        const scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for Y
+    // Function to add a ring to the internal board representation
+    function addRingToBoard(row, col) {
+        let ringNumber = turnCount % 2 !== 0 ? 2 : -2;
 
-        const mouseX = (event.clientX - rect.left) * scaleX;  // scale mouse coordinates after they have
-        const mouseY = (event.clientY - rect.top) * scaleY;   // been adjusted to be relative to element
-
-        updateHoverEffect(mouseX, mouseY);
-    }
-
-    function getCursorPosition(canvas, event) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;    // relationship bitmap vs. element for X
-        const scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for Y
-
-        const mouseColumn = (event.clientX - rect.left) * scaleX;  // scale mouse coordinates after they have
-        const mouseRow = (event.clientY - rect.top) * scaleY;   // been adjusted to be relative to element
-
-        const cellPadding = gridSize * 0.03;
-        // Convert mouse coordinates to grid indices with padding
-        const adjustedColumn = Math.floor((mouseColumn + cellPadding) / horizontalSpacing) - 1;
-        const adjustedRow = Math.floor(mouseRow / verticalSpacing) - 1;
-
-        // Check if the click is within the bounds of the board
-        if (adjustedRow >= 0 && adjustedRow < 19 &&
-            adjustedColumn >= 0 && adjustedColumn < 11 &&
-            BOARD_TEMPLATE[adjustedRow].includes(adjustedColumn)) {
-            addRingToBoard(adjustedRow, adjustedColumn);
-        }
-
-        if (removeRingState) {
-            // Only allow ring removal in this state
-            removeRingIfClicked(adjustedRow, adjustedColumn);
-            if (!removeRingAtStartOfTurn) {
-                currentPlayer *= -1;
-                turnCount++; // Increment turn count
-                updateTurnDisplay(); // Update the display
-            }
-            removeRingAtStartOfTurn = false;
-            drawGrid();
-        }
-
-        if (selectedRing) {
-            printBoard()
-            moveRing(adjustedRow, adjustedColumn);
-
-        } else if (removeRingState === false){
-            drawGrid();
-            if (selectMarkerState) {
-               checkForMarkerRemoval(adjustedRow, adjustedColumn);
-            } else {
-                checkForMarkerSequences();
-                drawGrid();
-                if (selectMarkerState) {
-                   removeRingAtStartOfTurn = true;
-                   checkForMarkerRemoval(gridRow, adjustedColumn);
-                }
-            }
-            selectRing(adjustedRow, adjustedColumn);
-            checkForMarkerRemoval(adjustedRow, adjustedColumn);
-            drawGrid();
-        }
-    }
-
-    function removeRingIfClicked(row, col) {
-        // Convert row and column indices into canvas coordinates
-        let clickedX = col * horizontalSpacing + horizontalSpacing / 2 + margin;
-        let clickedY = row * verticalSpacing + verticalSpacing / 2 + margin;
-
-        // Find the index of the ring that matches the clicked position
-        let ringIndex = rings.findIndex(ring => {
-            return Math.abs(ring.x - clickedX) < horizontalSpacing / 2 &&
-                   Math.abs(ring.y - clickedY) < verticalSpacing / 2;
-        });
-
-        if (ringIndex !== -1) {
-            let ring = rings[ringIndex];
-            if ((ring.number > 0 && playerToRemoveRing === 1) || (ring.number < 0 && playerToRemoveRing === -1)) {
-                // Remove the ring from the internal board
-                internalBoard[row][col] = 0;
-
-                // Remove the ring and update score
-                rings.splice(ringIndex, 1);
-                score[playerToRemoveRing === 1 ? 'white' : 'black']++;
-                drawRemovedRings();
-                console.log(score)
-
-                // Reset the state and switch turns
-                selectMarkerState = false;
-                removeRingState = false;
-                playerToRemoveRing = null;
-
-                // Check for winning score
-                if (score.white === 3 || score.black === 3) {
-                    let winner = score.white === 3 ? "White" : "Black";
-                    outcome = winner + " wins the game!";
-                    updateOutcomeDisplay();
-                    gameOver = true; // Set the game over state
-                }
-
-                drawGrid();
-            }
-        }
-        if (!gameOver) {
-            printBoard();
-        }
-    }
-
-    function checkForMarkerRemoval(row, col) {
-        // Check if the clicked position is a clickable marker
-        if (clickableMarkers.some(marker => marker.row === row && marker.col === col)) {
-            removeMarkerSequence(row, col);
-        }
-    }
-
-    function removeMarkerSequence(row, col) {
-        // Find the sequence that contains the clicked marker
-        let sequenceToRemove = markerSequences.find(sequence =>
-            sequence.some(marker => marker.row === row && marker.col === col)
-        );
-
-        // Remove markers from the sequence
-        if (sequenceToRemove) {
-            let scoredMarkerColor = sequenceToRemove[0].color;
-
-            let clickedIndex = sequenceToRemove.findIndex(marker => marker.row === row && marker.col === col);
-            let startIndex = Math.max(clickedIndex - 2, 0);
-            let endIndex = Math.min(clickedIndex + 2, sequenceToRemove.length - 1);
-
-            for (let i = startIndex; i <= endIndex; i++) {
-                let marker = sequenceToRemove[i];
-                internalBoard[marker.row][marker.col] = 0; // Remove marker from board
-                markers = markers.filter(m => !(m.row === marker.row && m.col === marker.col));
-
-            }
-            markerCount -= 5;
-            updateMarkerDisplay();
-
-            clickableMarkers = []; // Clear the clickable markers
-            // Set the turn to the player whose markers were not just scored
-
-            // Determine the player who needs to remove a ring
-            playerToRemoveRing = scoredMarkerColor === 'white' ? 1 : -1;
-
-            selectMarkerState = false;
-            removeRingState = true;
-            drawGrid(); // Redraw the grid
-        }
-    }
-
-    function flipMarkersAlongPath(startRow, startCol, endRow, endCol) {
-        const allPaths = verticalLists.concat(diagonalLists, antiDiagonalLists);
-
-        allPaths.forEach(path => {
-            if (path.some(point => point[0] === startRow && point[1] === startCol) &&
-                path.some(point => point[0] === endRow && point[1] === endCol)) {
-
-                let startIndex = path.findIndex(point => point[0] === startRow && point[1] === startCol);
-                let endIndex = path.findIndex(point => point[0] === endRow && point[1] === endCol);
-
-                if (startIndex > endIndex) {
-                    [startIndex, endIndex] = [endIndex, startIndex]; // Swap if start is greater than end
-                }
-
-                for (let i = startIndex + 1; i < endIndex; i++) {
-                    let [row, col] = path[i];
-                    if (internalBoard[row][col] === 1 || internalBoard[row][col] === -1) {
-                        internalBoard[row][col] *= -1; // Flip the marker
-                        // Update marker color in the markers array
-                        let markerIndex = markers.findIndex(marker => marker.x === col * horizontalSpacing + horizontalSpacing / 2 + margin && marker.y === row * verticalSpacing + verticalSpacing / 2 + margin);
-                        if (markerIndex !== -1) {
-                            markers[markerIndex].color = internalBoard[row][col] === 1 ? 'white' : 'black';
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    function checkForMarkerSequences() {
-        markerSequences = []; // Reset previous sequences
-        clickableMarkers = []; // Reset clickable markers
-
-        const allPaths = [...verticalLists, ...diagonalLists, ...antiDiagonalLists];
-
-        allPaths.forEach(path => {
-            let currentSequence = [];
-            let lastMarker = null;
-
-            path.forEach(([row, col]) => {
-                const marker = internalBoard[row][col];
-                if (marker === 1 || marker === -1) {
-                    if (marker === lastMarker) {
-                        currentSequence.push({ row, col, color: marker === 1 ? 'white' : 'black' });
-                    } else {
-                        if (currentSequence.length >= 5) {
-                            markerSequences.push([...currentSequence]);
-                        }
-                        currentSequence = [{ row, col, color: marker === 1 ? 'white' : 'black' }];
-                    }
-                    lastMarker = marker;
-                } else {
-                    if (currentSequence.length >= 5) {
-                        markerSequences.push([...currentSequence]);
-                    }
-                    currentSequence = [];
-                    lastMarker = null;
-                }
-            });
-
-            // Check at the end of the path
-            if (currentSequence.length >= 5) {
-                markerSequences.push([...currentSequence]);
-            }
-        });
-        // Identify clickable markers in each sequence
-        markerSequences.forEach(sequence => {
-            let len = sequence.length;
-            let startIndex, endIndex;
-            startIndex = 2;
-            endIndex = len - 3;
-
-            // Ensure the indices are within bounds and add them to clickableMarkers
-            for (let i = startIndex; i <= endIndex && i < len; i++) {
-                if (i >= 0) {
-                    clickableMarkers.push(sequence[i]);
-                }
-            }
-        });
-        if (markerSequences.length > 0) {
-            selectMarkerState = true; // Set the state to select marker
-        }
-    }
-
-    function animateRingMove(startX, startY, endX, endY, ringNumber, callback) {
-        const animationDuration = 300; // Duration in milliseconds
-        const startTime = Date.now();
-
-        function drawFrame() {
-            let currentTime = Date.now();
-            let progress = Math.min((currentTime - startTime) / animationDuration, 1);
-
-            let currentX = startX + (endX - startX) * progress;
-            let currentY = startY + (endY - startY) * progress;
-
-            // Clear the canvas and redraw everything except the moving ring
-            drawGrid(); // You may need to modify drawGrid to optionally exclude the moving ring
-
-            // Draw the moving ring at its current position
-            drawRing(currentX, currentY, ringNumber);
-
-            if (progress < 1) {
-                window.requestAnimationFrame(drawFrame);
-            } else {
-                callback(); // Call the callback function once the animation is complete
-            }
-        }
-
-        drawFrame();
-    }
-
-    function moveRing(newRow, newCol) {
-        let isTurnWhite = turnCount % 2 !== 0;
-        // Check if the new position is valid
-        if (!possibleMoves.some(point => point[0] === newRow && point[1] === newCol)) {
-            console.log("Invalid move");
-            return;
-        }
-
-        // Get the ring number from the original position
-        let ringNumber = internalBoard[selectedRing.row][selectedRing.col];
-
-        // Remove the ring from the original position
-        internalBoard[selectedRing.row][selectedRing.col] = isTurnWhite ? 1 : -1;
-        let ringIndex = rings.findIndex(ring => ring.x === selectedRing.col * horizontalSpacing + horizontalSpacing / 2 + margin && ring.y === selectedRing.row * verticalSpacing + verticalSpacing / 2 + margin);
-        if (ringIndex !== -1) {
-            rings.splice(ringIndex, 1);
-        }
-        
-        let startX = selectedRing.col * horizontalSpacing + horizontalSpacing / 2 + margin;
-        let startY = selectedRing.row * verticalSpacing + verticalSpacing / 2 + margin;
-        let endX = newCol * horizontalSpacing + horizontalSpacing / 2 + margin;
-        let endY = newRow * verticalSpacing + verticalSpacing / 2 + margin;
-
-        animateRingMove(startX, startY, endX, endY, ringNumber, function() {
-            // Update game state after animation completes
-            // Add the ring to the new position
-            internalBoard[newRow][newCol] = ringNumber;
-            rings.push({ x: newCol * horizontalSpacing + horizontalSpacing / 2 + margin, y: newRow * verticalSpacing + verticalSpacing / 2 + margin, number: ringNumber });
-
-            // Flip markers along the path
-            flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
-            markerCount ++;
-            updateMarkerDisplay();
-            checkForMarkerSequences();
-            let currentPlayerColor = isTurnWhite ? 'white' : 'black';
-            clickableMarkers = clickableMarkers.filter(sequence => sequence.color === currentPlayerColor);
-            markerSequences = markerSequences.filter(sequence => sequence.length > 0 && sequence[0].color === currentPlayerColor);
-
-            // Reset selectedRing and possibleMoves
-            selectedRing = null;
-            possibleMoves = [];
-
-            playPiecePlacedSound();
-
-            if (selectMarkerState && clickableMarkers.length > 0) {
-                drawGrid();
-                return;
-            } else {
-                selectMarkerState = false;
-            }
-
-            currentPlayer *= -1;
+        // Check if it's within the first ten turns and the selected spot is empty
+        if (turnCount < 11 && internalBoard[row] && internalBoard[row][col] === 0) {
+            saveState();
+            document.getElementById('undoButton').disabled = false;
+            internalBoard[row][col] = ringNumber;
+            rings.push({ x: col * horizontalSpacing + horizontalSpacing / 2 + margin, y: row * verticalSpacing + verticalSpacing / 2 + margin, number: ringNumber});
             turnCount++; // Increment turn count
-            updateTurnDisplay(); // Update the display
-            checkForMarkerSequences();
-            drawGrid();
-        });
-
-        if (selectMarkerState) {
-           removeRingAtStartOfTurn = true;
-           return;
-        }
-
-        if (markers.length == 51) {
-            if (score.white > score.black) {
-                outcome = 'Outcome: White wins. All 51 markers are used up.';
-            } else if (score.black > score.white) {
-                outcome = 'Outcome: Black wins. All 51 markers are used up.';
-            } else {
-                outcome = 'Outcome: A Tie. All 51 markers are used up.';
-            }
-            updateOutcomeDisplay();
-            gameOver = true;
+            updateTurnDisplay(); // Update the turn display
+            gameBoard.drawRings(rings);
+            playPiecePlacedSound();
+            console.log(history);
+            printBoard();
+        } else{
+            console.log("All rings placed. No further placement allowed.");
         }
     }
 
     function selectRing(row, col) {
-        if (selectMarkerState || removeRingState) {
-            console.log("Select a marker sequence first or remove a ring first");
-            return;
-        }
-
         let ringValue = internalBoard[row][col];
         let isTurnWhite = turnCount % 2 !== 0;
         let isTurnBlack = turnCount % 2 === 0;
 
-        let isPlayerWhiteRing = isTurnWhite && ringValue >= 2 && ringValue <= 6;
-        let isPlayerBlackRing = isTurnBlack && ringValue >= -6 && ringValue <= -2;
+        let isPlayerWhiteRing = isTurnWhite && ringValue === 2;
+        let isPlayerBlackRing = isTurnBlack && ringValue === -2;
 
         if ((isPlayerWhiteRing || isPlayerBlackRing) && turnCount > 10) {
             selectedRing = { row, col };
-            highlightMoves(row, col);
-            // Place a marker at the original ring position
-            let markerPosition = {
-                x: col * horizontalSpacing + horizontalSpacing / 2 + margin,
-                y: row * verticalSpacing + verticalSpacing / 2 + margin,
-                row: row,
-                col: col,
-                color: isTurnWhite ? 'white' : 'black'
-            };
-            markers.push(markerPosition);
-
-            drawGrid();
+            getPossibleMoves(row, col);
+            if (possibleMoves.length === 0) {
+                console.log("No possible moves for this ring.");
+            } else {
+                document.getElementById('undoButton').disabled = true;
+                saveState();
+                // Place a marker at the original ring position
+                let markerPosition = {
+                    x: col * horizontalSpacing + horizontalSpacing / 2 + margin,
+                    y: row * verticalSpacing + verticalSpacing / 2 + margin,
+                    row: row,
+                    col: col,
+                    color: turnCount % 2 !== 0 ? 1 : -1
+                };
+                markers.push(markerPosition);
+                markerCount++;
+                updateMarkerDisplay();
+            }
         }
     }
 
-    function highlightMoves(row, col) {
+    function getPossibleMoves(row, col) {
         possibleMoves = [];
 
         // Function to add moves from a given list if it contains the selected ring
@@ -701,6 +210,299 @@ document.addEventListener("DOMContentLoaded", function() {
         addMovesFromList(diagonalLists, row, col);
         addMovesFromList(antiDiagonalLists, row, col);
     }
+
+    function flipMarkersAlongPath(startRow, startCol, endRow, endCol) {
+        const allPaths = verticalLists.concat(diagonalLists, antiDiagonalLists);
+
+        allPaths.forEach(path => {
+            if (path.some(point => point[0] === startRow && point[1] === startCol) &&
+                path.some(point => point[0] === endRow && point[1] === endCol)) {
+
+                let startIndex = path.findIndex(point => point[0] === startRow && point[1] === startCol);
+                let endIndex = path.findIndex(point => point[0] === endRow && point[1] === endCol);
+
+                if (startIndex > endIndex) {
+                    [startIndex, endIndex] = [endIndex, startIndex]; // Swap if start is greater than end
+                }
+
+                for (let i = startIndex + 1; i < endIndex; i++) {
+                    let [row, col] = path[i];
+                    if (internalBoard[row][col] === 1 || internalBoard[row][col] === -1) {
+                        internalBoard[row][col] *= -1; // Flip the marker
+                        // Update marker color in the markers array
+                        let markerIndex = markers.findIndex(marker => marker.x === col * horizontalSpacing + horizontalSpacing / 2 + margin && marker.y === row * verticalSpacing + verticalSpacing / 2 + margin);
+                        if (markerIndex !== -1) {
+                            markers[markerIndex].color = internalBoard[row][col] === 1 ? 1 : -1;
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function animateRingMove(startX, startY, endX, endY, ringNumber, callback) {
+        const animationDuration = 300; // Duration in milliseconds
+        const startTime = Date.now();
+
+        function drawFrame() {
+            let currentTime = Date.now();
+            let progress = Math.min((currentTime - startTime) / animationDuration, 1);
+
+            let currentX = startX + (endX - startX) * progress;
+            let currentY = startY + (endY - startY) * progress;
+
+            // Clear the canvas and redraw everything except the moving ring
+            drawGrid(); // You may need to modify drawGrid to optionally exclude the moving ring
+
+            // Draw the moving ring at its current position
+            gameBoard.drawRing(currentX, currentY, ringNumber);
+
+            if (progress < 1) {
+                window.requestAnimationFrame(drawFrame);
+            } else {
+                callback(); // Call the callback function once the animation is complete
+            }
+        }
+
+        drawFrame();
+    }
+    function moveRing(newRow, newCol) {
+        if (!possibleMoves.some(point => point[0] === newRow && point[1] === newCol)) {
+            console.log("Invalid move");
+            return;
+        }
+
+        let ringNumber = turnCount % 2 !== 0 ? 2 : -2;
+        // Place a marker at the ring.
+        internalBoard[selectedRing.row][selectedRing.col] = turnCount % 2 !== 0 ? 1 : -1;
+        let pickedRing = rings.findIndex(ring => ring.x === selectedRing.col * horizontalSpacing + horizontalSpacing / 2 + margin && ring.y === selectedRing.row * verticalSpacing + verticalSpacing / 2 + margin);
+        if (pickedRing !== -1) {
+            rings.splice(pickedRing, 1);
+        }
+
+        let startX = selectedRing.col * horizontalSpacing + horizontalSpacing / 2 + margin;
+        let startY = selectedRing.row * verticalSpacing + verticalSpacing / 2 + margin;
+        let endX = newCol * horizontalSpacing + horizontalSpacing / 2 + margin;
+        let endY = newRow * verticalSpacing + verticalSpacing / 2 + margin;
+
+       animateRingMove(startX, startY, endX, endY, ringNumber, function() {
+           internalBoard[newRow][newCol] = ringNumber;
+           rings.push({
+               x: newCol * horizontalSpacing + horizontalSpacing / 2 + margin,
+               y: newRow * verticalSpacing + verticalSpacing / 2 + margin,
+               number: ringNumber
+           });
+           flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
+
+           let currentPlayer = (turnCount % 2 !== 0) ? 1 : -1;
+           // Check if there are sequences to remove
+           if (hasSequencesToRemove((currentPlayer))) {
+               selectSequence = true;
+               gameState = 'selectingSequence';
+           } else if (hasSequencesToRemove(-currentPlayer)) {
+               gameState = 'removingSequenceAtStart';
+               turnCount++;
+               updateTurnDisplay();
+           } else {
+               // Only increment turnCount if there are no sequences to remove
+               turnCount++;
+               updateTurnDisplay();
+           }
+
+           selectSequenceAtStart = false;
+           selectedRing = null;
+           possibleMoves = [];
+
+           updateTurnDisplay();
+
+           gameBoard.drawRings(rings);
+           gameBoard.drawMarkers(markers);
+           playPiecePlacedSound();
+
+           document.getElementById('undoButton').disabled = false;
+
+           if (markers.length === 51) {
+               if (score.white > score.black) {
+                   outcome = 'Outcome: White wins. All 51 markers are used up.';
+               } else if (score.black > score.white) {
+                   outcome = 'Outcome: Black wins. All 51 markers are used up.';
+               } else {
+                   outcome = 'Outcome: A Tie. All 51 markers are used up.';
+               }
+               updateOutcomeDisplay();
+               gameOver = true;
+           }
+
+           drawGrid();
+           // printBoard();
+       });
+    }
+
+    function hasSequencesToRemove(currentPlayerColor) {
+        checkForMarkerSequences(currentPlayerColor);
+        return markerSequences.some(sequence =>
+            sequence.length >= 5 && sequence[0].color === currentPlayerColor
+        );
+    }
+
+    function checkForMarkerSequences(currentPlayerColor) {
+        markerSequences = []; // Reset previous sequences
+        const allPaths = [...verticalLists, ...diagonalLists, ...antiDiagonalLists];
+
+        // Check for sequences of 5 in a row and add them to markerSequences
+        allPaths.forEach(path => {
+            let currentSequence = [];
+            let lastMarker = null;
+
+            path.forEach(([row, col]) => {
+                const marker = internalBoard[row][col];
+                if (marker === currentPlayerColor) {
+                    if (marker === lastMarker) {
+                        currentSequence.push({ row, col, color: marker === 1 ? 1 : -1});
+                    } else {
+                        if (currentSequence.length >= 5) {
+                            markerSequences.push([...currentSequence]);
+                        }
+                        currentSequence = [{ row, col, color: marker === 1 ? 1 : -1}];
+                    }
+                    lastMarker = marker;
+                } else {
+                    if (currentSequence.length >= 5) {
+                        markerSequences.push([...currentSequence]);
+                    }
+                    currentSequence = [];
+                    lastMarker = null;
+                }
+            });
+
+            // Check at the end of the path
+            if (currentSequence.length >= 5) {
+                markerSequences.push([...currentSequence]);
+            }
+        });
+        populateClickableMarkers();
+    }
+
+    function populateClickableMarkers() {
+        // let allMarkers = new Map(); // To track the counts of each marker
+        // console.log(markerSequences);
+        // // After populating markerSequences, identify unique markers
+        // markerSequences.forEach(sequence => {
+        //     sequence.forEach(marker => {
+        //         const key = `${marker.row}-${marker.col}`;
+        //         if (allMarkers.has(key)) {
+        //             allMarkers.get(key).count += 1;
+        //         } else {
+        //             allMarkers.set(key, { ...marker, count: 1 });
+        //         }
+        //     });
+        // });
+
+
+        // // Now populate clickableMarkers with markers that have a count of 1
+        // clickableMarkers = [];
+        // allMarkers.forEach((value, key) => {
+        //     if (value.count === 1) {
+        //         clickableMarkers.push({ row: value.row, col: value.col, color: value.color });
+        //     }
+        // });
+
+        let currentPlayerColor = (turnCount % 2 !== 0) ? 1 : -1;
+
+        markerSequences.forEach(sequence => {
+            let len = sequence.length;
+            let startIndex, endIndex;
+            startIndex = 2;
+            endIndex = len - 3;
+            // Ensure the indices are within bounds and add them to clickableMarkers
+            for (let i = startIndex; i <= endIndex && i < len; i++) {
+                if (i >= 0 && sequence[i].color === currentPlayerColor) {
+                    clickableMarkers.push(sequence[i]);
+                }
+            }
+        });
+
+        console.log(clickableMarkers);
+    }
+
+    // Function to remove sequence of markers
+    function removeMarkerSequence(row, col) {
+        console.log(row + ", " + col);
+        // Find the sequence that contains the clicked marker
+        let sequenceToRemove = markerSequences.find(sequence =>
+            sequence.some(marker => marker.row === row && marker.col === col)
+        );
+
+        // Remove markers from the sequence
+        if (sequenceToRemove) {
+            let clickedIndex = sequenceToRemove.findIndex(marker => marker.row === row && marker.col === col);
+            let startIndex = Math.max(clickedIndex - 2, 0);
+            let endIndex = Math.min(clickedIndex + 2, sequenceToRemove.length - 1);
+
+            for (let i = startIndex; i <= endIndex; i++) {
+                let marker = sequenceToRemove[i];
+                internalBoard[marker.row][marker.col] = 0; // Remove marker from board
+                markers = markers.filter(m => !(m.row === marker.row && m.col === marker.col));
+
+            }
+            markerCount -= 5;
+            updateMarkerDisplay();
+
+            clickableMarkers = []; // Clear the clickable markers
+            selectSequence = false;
+            drawGrid(); // Redraw the grid
+        }
+    }
+
+    function removeRingIfClicked(row, col) {
+        // Convert row and column indices into canvas coordinates
+        let clickedX = col * horizontalSpacing + horizontalSpacing / 2 + margin;
+        let clickedY = row * verticalSpacing + verticalSpacing / 2 + margin;
+
+        // Find the index of the ring that matches the clicked position
+        let ringIndex = rings.findIndex(ring => {
+            return Math.abs(ring.x - clickedX) < horizontalSpacing / 2 &&
+                Math.abs(ring.y - clickedY) < verticalSpacing / 2;
+        });
+
+        if (ringIndex !== -1) {
+            let ring = rings[ringIndex];
+            let currentPlayer = (turnCount % 2 !== 0) ? 1 : -1;
+            if ((ring.number > 0 && currentPlayer === 1) || ((ring.number < 0 && currentPlayer === -1))) {
+                // Remove the ring from the internal board
+                internalBoard[row][col] = 0;
+                // Remove the ring and update score
+                rings.splice(ringIndex, 1);
+                score[currentPlayer === 1 ? 'white' : 'black']++;
+                drawRemovedRings();
+
+                // Check for winning score
+                if (score.white === 3 || score.black === 3) {
+                    let winner = score.white === 3 ? "White" : "Black";
+                    outcome = winner + " wins the game!";
+                    updateOutcomeDisplay();
+                    gameOver = true; // Set the game over state
+                }
+
+                // Recheck for sequences
+                if (!hasSequencesToRemove(currentPlayer)) {
+                    // If no more sequences, then end the turn
+                    gameState = 'movingRing';
+                    if (hasSequencesToRemove(-currentPlayer)) {
+                        gameState = 'removingSequenceAtStart';
+                    }
+                    selectSequence = false;
+                    if (!selectSequenceAtStart) {
+                        turnCount++;
+                        updateTurnDisplay();
+                    }
+                    console.log("Ring Index: " + ringIndex);
+                }
+            }
+            drawGrid();
+        }
+    }
+
     function drawRemovedRings() {
         const bottomLeftStartX = margin;  // Starting X position for white rings at the bottom left
         const bottomLeftStartY = canvas.height - margin - (radius * 2);  // Starting Y just above the bottom edge
@@ -750,33 +552,210 @@ document.addEventListener("DOMContentLoaded", function() {
         ctx.stroke();
     }
 
+    function updateGameState() {
+        let currentPlayerColor = (turnCount % 2 !== 0) ? 1 : -1;
+        // Check if there are sequences to remove for the current player
+        if (turnCount < 11) {
+            gameState = 'placingRings';
+        } else if (selectSequence && gameState === 'removingSequenceAtStart') {
+            console.log("selectSequence && gameState === 'removingSequenceAtStart");
+            console.log(hasSequencesToRemove(currentPlayerColor));
+            if (hasSequencesToRemove(currentPlayerColor)) {
+                gameState = 'selectingSequence';
+            } else {
+                gameState = 'removingRing';
+            }
+        } else if (gameState === 'selectingSequence') {
+            if (selectSequence) {
+                gameState = 'selectingSequence';
+            } else {
+                gameState = 'removingRing';
+            }
+        } else if (gameState === 'removingRing') {
+            gameState = 'selectingSequence';
+        }
+        else if (gameState === 'removingSequenceAtStart') {
+            gameState = 'removingSequenceAtStart';
+        }
+        else if (hasSequencesToRemove(currentPlayerColor)) {
+            gameState = 'selectingSequence';
+        } else {
+            gameState = 'movingRing';
+        }
+    }
+
+    function getCursorPosition(canvas, event) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;    // relationship bitmap vs. element for X
+        const scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for Y
+
+        const mouseColumn = (event.clientX - rect.left) * scaleX;  // scale mouse coordinates after they have
+        const mouseRow = (event.clientY - rect.top) * scaleY;   // been adjusted to be relative to element
+
+        // Padding for each cell to make clickable area larger
+        const cellPadding = gridSize * 0.03; // This value can be adjusted based on your grid size
+
+        // Convert mouse coordinates to grid indices with padding
+        const adjustedColumn = Math.floor((mouseColumn + cellPadding) / horizontalSpacing) - 1;
+        const adjustedRow = Math.floor((mouseRow) / verticalSpacing) - 1;
+
+        console.log(gameState);
+
+        switch (gameState) {
+            case 'placingRings':
+                addRingToBoard(adjustedRow, adjustedColumn);
+                break;
+            case 'selectingSequence':
+                removeMarkerSequence(adjustedRow, adjustedColumn);
+                drawGrid();
+                break;
+            case 'removingSequenceAtStart':
+                selectSequenceAtStart = true;
+                selectSequence = true;
+                removeMarkerSequence(adjustedRow, adjustedColumn);
+                break;
+            case 'removingRing':
+                gameBoard.drawRingsForRemoval(rings, (turnCount % 2 !== 0) ? 1 : -1);
+                removeRingIfClicked(adjustedRow, adjustedColumn);
+                break;
+            case 'movingRing':
+                selectRing(adjustedRow, adjustedColumn);
+                moveRing(adjustedRow, adjustedColumn);
+                break;
+        }
+        updateGameState();
+    }
+
+    function onMouseMove(event) {
+        // Calculate the mouse position within the canvas
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;    // relationship bitmap vs. element for X
+        const scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for Y
+
+        const mouseX = (event.clientX - rect.left) * scaleX;  // scale mouse coordinates after they have
+        const mouseY = (event.clientY - rect.top) * scaleY;   // been adjusted to be relative to element
+
+        updateHoverEffect(mouseX, mouseY);
+    }
+
+    canvas.addEventListener('click', function(event) {
+        if (gameOver) {
+            console.log("Game over. No further interactions allowed.");
+            return;
+        }
+        getCursorPosition(canvas, event);
+    });
+
+    canvas.addEventListener('mousemove', onMouseMove);
+
+    function updateUndoButtonState() {
+        const undoButton = document.getElementById('undoButton');
+        undoButton.disabled = history.length === 0;
+    }
+
+    function updateRedoButtonState() {
+        const redoButton = document.getElementById('redoButton');
+        redoButton.disabled = future.length === 0;
+    }
+
+    // Method to save the current state
+    function saveState() {
+        // Create a deep copy of the current game state
+        console.log("Saved markers: " + markers);
+        const currentState = {
+            rings: JSON.parse(JSON.stringify(rings)),
+            markers: JSON.parse(JSON.stringify(markers)),
+            internalBoard: JSON.parse(JSON.stringify(internalBoard)),
+            score: JSON.parse(JSON.stringify(score)),
+            turnCount: turnCount,
+            markerCount: markerCount
+        };
+
+        history.push(currentState);
+        future = []; // Clear the redo history when a new action is taken
+        console.log(history.length);
+    }
+
+    // Helper method to load a saved state
+    function loadState(state) {
+        rings = state.rings;
+        markers = state.markers;
+        turnCount = state.turnCount;
+        markerCount = state.markerCount;
+        internalBoard = state.internalBoard;
+        score = state.score;
+        gameState = turnCount > 10 ? 'movingRing' : 'placingRings';
+        possibleMoves = [];
+        selectedRing = null;
+        clickableMarkers = [];
+        // Load other relevant game state properties
+        console.log("Loaded markers: " + markers);
+        updateTurnDisplay();
+        updateMarkerDisplay();
+        drawGrid(); // Redraw the board with the loaded state
+    }
+
+    // Helper method to get the current game state
+    function getCurrentState() {
+        return {
+            rings: JSON.parse(JSON.stringify(rings)),
+            markers: JSON.parse(JSON.stringify(markers)),
+            turnCount: turnCount,
+            markerCount: markerCount,
+            score: score,
+            internalBoard: JSON.parse(JSON.stringify(internalBoard)),
+        };
+    }
+
+    function undo() {
+        if (history.length > 0) {
+            const lastState = history.pop();
+            future.push(getCurrentState()); // Save the current state for redo
+            loadState(lastState);
+        }
+        updateUndoButtonState();
+        updateRedoButtonState();
+    }
+
+    function redo() {
+        if (future.length > 0) {
+            const nextState = future.pop();
+            history.push(getCurrentState()); // Save the current state for undo
+            loadState(nextState);
+        }
+        updateRedoButtonState();
+        updateUndoButtonState();
+    }
+
+    document.getElementById('undoButton').addEventListener('click', () => undo());
+    document.getElementById('redoButton').addEventListener('click', () => redo());
+    document.getElementById('randomizeRings').addEventListener('click', function() {
+        randomizeRings();
+    });
+
     function randomizeRings() {
         // Reset the game state
-        internalBoard.forEach(row => {
-            for (let i = 0; i < row.length; i++) {
-                if (row[i] !== 9) {
-                    row[i] = 0;
-                }
-            }
+        BOARD_TEMPLATE.forEach((columns, row) => {
+            columns.forEach(column => {
+                internalBoard[row][column] = 0; // Mark valid coordinates
+            });
         });
         rings = [];
         markers = [];
         markerSequences = [];
         clickableMarkers = [];
-        selectMarkerState = false;
-        removeRingState = false;
         selectedRing = null;
         hoverPos = null;
-        playerToRemoveRing = null;
-        removeRingAtStartOfTurn = null;
-        possibleMoves = []
+        possibleMoves = [];
         score = { white: 0, black: 0 };
         outcome = '';
         gameOver = false;
-        currentPlayer = 1;
-        ringCounter = { '1': 2, '-1': -2 };
         turnCount = 1;
         markerCount = 0;
+        gameState = 'movingRing';
+        selectSequence = false;
+        selectSequenceAtStart = false;
+
         updateTurnDisplay();
         updateMarkerDisplay();
         updateOutcomeDisplay();
@@ -793,22 +772,22 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         });
 
+        let ringNumber = turnCount % 2 !== 0 ? 2 : -2;
         for (let i = 0; i < 10; i++) {
             let randomIndex = Math.floor(Math.random() * availablePositions.length);
             let position = availablePositions[randomIndex];
             availablePositions.splice(randomIndex, 1); // Remove the chosen position
 
             // Place the ring on the board
-            internalBoard[position.row][position.col] = ringCounter[currentPlayer];
+            internalBoard[position.row][position.col] = ringNumber;
             rings.push({
                 x: position.col * horizontalSpacing + horizontalSpacing / 2 + margin,
                 y: position.row * verticalSpacing + verticalSpacing / 2 + margin,
-                number: ringCounter[currentPlayer]
+                number: ringNumber
             });
-
-            ringCounter[currentPlayer] += currentPlayer; // Update the ring number
-            currentPlayer *= -1; // Switch player after each ring placement
+            ringNumber *= -1; // Flip the ring number
         }
+
         turnCount = 11; // Update turn count to reflect that all rings are placed
         updateTurnDisplay();
         playPiecePlacedSound();
@@ -833,19 +812,8 @@ document.addEventListener("DOMContentLoaded", function() {
         outcomeElement.textContent = `${outcome}`;
     }
 
-    canvas.addEventListener('mousemove', onMouseMove);
-    // Attach the click event to the canvas
-    canvas.addEventListener('click', function(event) {
-        if (gameOver) {
-            console.log("Game over. No further interactions allowed.");
-            return;
-        }
-        getCursorPosition(canvas, event);
-    });
-
-    document.getElementById('randomizeRings').addEventListener('click', function() {
-        randomizeRings();
-    });
-
-    drawGrid();
+    updateUndoButtonState();
+    updateRedoButtonState();
+    gameBoard.draw(rings, markers, possibleMoves, clickableMarkers);
 });
+
