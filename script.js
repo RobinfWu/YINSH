@@ -46,18 +46,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
         drawRemovedRings();
 
-        // if (hoverPos) {
-        //     let ringNumberAtHover = internalBoard[hoverPos.row][hoverPos.col];
-        //     let isTurnWhite = turnCount % 2 !== 0;
-        //     let isTurnBlack = turnCount % 2 === 0;
-        //     let isPlayerRing = (isTurnWhite && ringNumberAtHover > 0) || (isTurnBlack && ringNumberAtHover < 0);
-        //     // Drawing hovering effect during ring placement stage
-        //     if (ringNumberAtHover === 0 && turnCount < 11) {
-        //         gameBoard.drawRing(hoverPos.x, hoverPos.y, turnCount % 2 !== 0 ? 2 : -2);
-        //     } else if (ringNumberAtHover !== 0 && turnCount >= 11 && isPlayerRing){ // Drawing hovering effect for markers
-        //         drawHoverMarker(hoverPos.x, hoverPos.y);
-        //     }
-        // }
+        if (hoverPos) {
+            let ringNumberAtHover = internalBoard[hoverPos.row][hoverPos.col];
+            let isTurnWhite = turnCount % 2 !== 0;
+            let isTurnBlack = turnCount % 2 === 0;
+            let isPlayerRing = (isTurnWhite && ringNumberAtHover > 0) || (isTurnBlack && ringNumberAtHover < 0);
+            // Drawing hovering effect during ring placement stage
+            if (ringNumberAtHover === 0 && turnCount < 11) {
+                gameBoard.drawRing(hoverPos.x, hoverPos.y, turnCount % 2 !== 0 ? 2 : -2);
+            } else if (ringNumberAtHover !== 0 && turnCount >= 11 && isPlayerRing){ // Drawing hovering effect for markers
+                drawHoverMarker(hoverPos.x, hoverPos.y);
+            }
+        }
     }
 
     // Draw Marker for Hover Effect
@@ -145,6 +145,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let isPlayerWhiteRing = isTurnWhite && ringValue === 2;
         let isPlayerBlackRing = isTurnBlack && ringValue === -2;
+
+        // Check if this ring is already selected
+        if (selectedRing && selectedRing.row === row && selectedRing.col === col) {
+            console.log("This ring is already selected.");
+            return; // Exit the function if the same ring is clicked again
+        }
 
         if ((isPlayerWhiteRing || isPlayerBlackRing) && turnCount > 10) {
             selectedRing = { row, col };
@@ -240,6 +246,33 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
+    function animateRingMove(startX, startY, endX, endY, ringNumber, callback) {
+        const animationDuration = 300; // Duration in milliseconds
+        const startTime = Date.now();
+
+        function drawFrame() {
+            let currentTime = Date.now();
+            let progress = Math.min((currentTime - startTime) / animationDuration, 1);
+
+            let currentX = startX + (endX - startX) * progress;
+            let currentY = startY + (endY - startY) * progress;
+
+            // Clear the canvas and redraw everything except the moving ring
+            drawGrid(); // You may need to modify drawGrid to optionally exclude the moving ring
+
+            // Draw the moving ring at its current position
+            gameBoard.drawRing(currentX, currentY, ringNumber);
+
+            if (progress < 1) {
+                window.requestAnimationFrame(drawFrame);
+            } else {
+                callback(); // Call the callback function once the animation is complete
+            }
+        }
+
+        drawFrame();
+    }
+
     function moveRing(newRow, newCol) {
         if (!possibleMoves.some(point => point[0] === newRow && point[1] === newCol)) {
             console.log("Invalid move");
@@ -254,54 +287,61 @@ document.addEventListener("DOMContentLoaded", function() {
             rings.splice(pickedRing, 1);
         }
 
-       internalBoard[newRow][newCol] = ringNumber;
-       rings.push({
-           x: newCol * horizontalSpacing + horizontalSpacing / 2 + margin,
-           y: newRow * verticalSpacing + verticalSpacing / 2 + margin,
-           number: ringNumber
-       });
-       flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
+        let startX = selectedRing.col * horizontalSpacing + horizontalSpacing / 2 + margin;
+        let startY = selectedRing.row * verticalSpacing + verticalSpacing / 2 + margin;
+        let endX = newCol * horizontalSpacing + horizontalSpacing / 2 + margin;
+        let endY = newRow * verticalSpacing + verticalSpacing / 2 + margin;
 
-       let currentPlayer = (turnCount % 2 !== 0) ? 1 : -1;
-       // Check if there are sequences to remove
-       if (hasSequencesToRemove((currentPlayer))) {
-           selectSequence = true;
-           gameState = 'selectingSequence';
-       } else if (hasSequencesToRemove(-currentPlayer)) {
-           gameState = 'removingSequenceAtStart';
-           turnCount++;
-           updateTurnDisplay();
-       } else {
-           // Only increment turnCount if there are no sequences to remove
-           turnCount++;
-           updateTurnDisplay();
-       }
+       animateRingMove(startX, startY, endX, endY, ringNumber, function() {
+           internalBoard[newRow][newCol] = ringNumber;
+           rings.push({
+               x: newCol * horizontalSpacing + horizontalSpacing / 2 + margin,
+               y: newRow * verticalSpacing + verticalSpacing / 2 + margin,
+               number: ringNumber
+           });
+           flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
 
-       selectSequenceAtStart = false;
-       selectedRing = null;
-       possibleMoves = [];
-
-       updateTurnDisplay();
-
-       gameBoard.drawRings(rings);
-       gameBoard.drawMarkers(markers);
-       playPiecePlacedSound();
-
-       document.getElementById('undoButton').disabled = false;
-
-       if (markers.length === 51) {
-           if (score.white > score.black) {
-               outcome = 'Outcome: White wins. All 51 markers are used up.';
-           } else if (score.black > score.white) {
-               outcome = 'Outcome: Black wins. All 51 markers are used up.';
+           let currentPlayer = (turnCount % 2 !== 0) ? 1 : -1;
+           // Check if there are sequences to remove
+           if (hasSequencesToRemove((currentPlayer))) {
+               selectSequence = true;
+               gameState = 'selectingSequence';
+           } else if (hasSequencesToRemove(-currentPlayer)) {
+               gameState = 'removingSequenceAtStart';
+               turnCount++;
+               updateTurnDisplay();
            } else {
-               outcome = 'Outcome: A Tie. All 51 markers are used up.';
+               // Only increment turnCount if there are no sequences to remove
+               turnCount++;
+               updateTurnDisplay();
            }
-           updateOutcomeDisplay();
-           gameOver = true;
-       }
-       updateDebugDisplay();
-       drawGrid();
+
+           selectSequenceAtStart = false;
+           selectedRing = null;
+           possibleMoves = [];
+
+           updateTurnDisplay();
+
+           gameBoard.drawRings(rings);
+           gameBoard.drawMarkers(markers);
+           playPiecePlacedSound();
+
+           document.getElementById('undoButton').disabled = false;
+
+           if (markers.length === 51) {
+               if (score.white > score.black) {
+                   outcome = 'Outcome: White wins. All 51 markers are used up.';
+               } else if (score.black > score.white) {
+                   outcome = 'Outcome: Black wins. All 51 markers are used up.';
+               } else {
+                   outcome = 'Outcome: A Tie. All 51 markers are used up.';
+               }
+               updateOutcomeDisplay();
+               gameOver = true;
+           }
+
+           drawGrid();
+       });
     }
 
     function hasSequencesToRemove(currentPlayerColor) {
@@ -779,12 +819,6 @@ document.addEventListener("DOMContentLoaded", function() {
     function updateOutcomeDisplay() {
         const outcomeElement = document.getElementById('outcome');
         outcomeElement.textContent = `${outcome}`;
-    }
-
-    function updateDebugDisplay() {
-        const debugElement = document.getElementById('debug');
-        let markersString = markers.map(marker => JSON.stringify(marker)).join('\n');
-        debugElement.textContent = markersString;
     }
 
     updateUndoButtonState();
