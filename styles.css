@@ -108,6 +108,29 @@ ul.dashed > li:before {
   box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3); /* Optional: Adds a subtle shadow for depth */
 }
 
+.button-container button {
+  padding: 10px 20px;
+  margin: 0 10px;
+  border: 3px solid #2D4745;
+  border-radius: 5px;
+  background-color: #58727d;
+  color: white;
+  font-size: 16px;
+  cursor: default; /* Default cursor to ensure it only changes on hover */
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.button-container button:hover {
+  background-color: #8098A0;
+  color: white;
+  cursor: pointer; /* Changes the cursor on hover */
+  border-color: #2D4745;
+}
+
+.button-container button:active {
+  transform: translateY(2px); /* Gives a feeling of the button being pressed */
+}
+
 .content-box {
   background-color: white; /* Set the background to white */
   margin: 20px 90px; /* Add some space around the box */
