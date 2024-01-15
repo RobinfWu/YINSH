@@ -46,18 +46,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
         drawRemovedRings();
 
-        if (hoverPos) {
-            let ringNumberAtHover = internalBoard[hoverPos.row][hoverPos.col];
-            let isTurnWhite = turnCount % 2 !== 0;
-            let isTurnBlack = turnCount % 2 === 0;
-            let isPlayerRing = (isTurnWhite && ringNumberAtHover > 0) || (isTurnBlack && ringNumberAtHover < 0);
-            // Drawing hovering effect during ring placement stage
-            if (ringNumberAtHover === 0 && turnCount < 11) {
-                gameBoard.drawRing(hoverPos.x, hoverPos.y, turnCount % 2 !== 0 ? 2 : -2);
-            } else if (ringNumberAtHover !== 0 && turnCount >= 11 && isPlayerRing){ // Drawing hovering effect for markers
-                drawHoverMarker(hoverPos.x, hoverPos.y);
-            }
-        }
+        // if (hoverPos) {
+        //     let ringNumberAtHover = internalBoard[hoverPos.row][hoverPos.col];
+        //     let isTurnWhite = turnCount % 2 !== 0;
+        //     let isTurnBlack = turnCount % 2 === 0;
+        //     let isPlayerRing = (isTurnWhite && ringNumberAtHover > 0) || (isTurnBlack && ringNumberAtHover < 0);
+        //     // Drawing hovering effect during ring placement stage
+        //     if (ringNumberAtHover === 0 && turnCount < 11) {
+        //         gameBoard.drawRing(hoverPos.x, hoverPos.y, turnCount % 2 !== 0 ? 2 : -2);
+        //     } else if (ringNumberAtHover !== 0 && turnCount >= 11 && isPlayerRing){ // Drawing hovering effect for markers
+        //         drawHoverMarker(hoverPos.x, hoverPos.y);
+        //     }
+        // }
     }
 
     // Draw Marker for Hover Effect
