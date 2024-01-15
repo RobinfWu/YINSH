@@ -623,6 +623,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 moveRing(adjustedRow, adjustedColumn);
                 break;
         }
+        if (gameState === 'movingRing'){
+           return;
+        }
         updateGameState();
     }
 
