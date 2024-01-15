@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", function() {
         let isPlayerBlackRing = isTurnBlack && ringValue === -2;
 
         // Check if this ring is already selected
-        if (selectedRing && selectedRing.row === row && selectedRing.col === col) {
+        if (selectedRing) {
             console.log("This ring is already selected.");
             return; // Exit the function if the same ring is clicked again
         }
