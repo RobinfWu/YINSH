@@ -111,8 +111,6 @@ class GameBoard {
         // Shadow for depth
         this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         this.ctx.shadowBlur = 10;
-        this.ctx.shadowOffsetX = 2;
-        this.ctx.shadowOffsetY = 2;
 
         // Gradient for a 3D effect
         let gradient = this.ctx.createRadialGradient(cx, cy, this.radius, cx, cy, 9 * this.radius);
@@ -128,8 +126,6 @@ class GameBoard {
         // Reset shadow properties
         this.ctx.shadowColor = 'transparent';
         this.ctx.shadowBlur = 0;
-        this.ctx.shadowOffsetX = 0;
-        this.ctx.shadowOffsetY = 0;
     }
 
 
@@ -151,8 +147,6 @@ class GameBoard {
         // Shadow for depth
         this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         this.ctx.shadowBlur = 10;
-        this.ctx.shadowOffsetX = 2;
-        this.ctx.shadowOffsetY = 2;
 
         markers.forEach(marker => {
             // Gradient for a 3D effect on markers
@@ -178,8 +172,6 @@ class GameBoard {
         // Reset shadow properties
         this.ctx.shadowColor = 'transparent';
         this.ctx.shadowBlur = 0;
-        this.ctx.shadowOffsetX = 0;
-        this.ctx.shadowOffsetY = 0;
     }
 
     // Draw the entire board

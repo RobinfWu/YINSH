@@ -127,9 +127,8 @@ document.addEventListener("DOMContentLoaded", function() {
             turnCount++; // Increment turn count
             updateTurnDisplay(); // Update the turn display
             gameBoard.drawRings(rings);
+            drawGrid();
             playPiecePlacedSound();
-            console.log(history);
-            printBoard();
         } else{
             console.log("All rings placed. No further placement allowed.");
         }
