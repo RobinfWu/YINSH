@@ -170,6 +170,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 playPiecePlacedSound();
             }
         }
+        drawGrid();
     }
 
     function getPossibleMoves(row, col) {
@@ -502,6 +503,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     console.log("Ring Index: " + ringIndex);
                 }
             }
+            playPiecePlacedSound();
             drawGrid();
         }
     }

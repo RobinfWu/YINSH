@@ -25,6 +25,7 @@ class GameBoard {
     }
 
     drawLines(lineList) {
+        this.ctx.strokeStyle = '#465767';
         lineList.forEach(line => {
             const [[startRow, startCol], [endRow, endCol]] = line;
 
@@ -60,12 +61,12 @@ class GameBoard {
                 if (possibleMoves.some(point => point[0] === row && point[1] === column)) {
                     this.ctx.fillStyle = 'red'; // Set fill style for red circles
                 } else {
-                    this.ctx.fillStyle = 'black'; // Set fill style for default circles
+                    this.ctx.fillStyle = '#111519'; // Set fill style for default circles
                 }
 
                 // Draw the dot
                 this.ctx.beginPath();
-                this.ctx.arc(x, y, this.radius, 0, Math.PI * 2);
+                this.ctx.arc(x, y, this.radius * 0.9, 0, Math.PI * 2);
                 this.ctx.fill();
             });
         });
