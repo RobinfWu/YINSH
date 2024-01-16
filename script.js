@@ -596,6 +596,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 break;
             case 'removingRing':
                 gameBoard.drawRingsForRemoval(rings, (turnCount % 2 !== 0) ? 1 : -1);
+                drawGrid();
                 removeRingIfClicked(adjustedRow, adjustedColumn);
                 break;
             case 'movingRing':
@@ -780,7 +781,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Function to update the turn count display
     function updateTurnDisplay() {
         const turnCounterElement = document.getElementById('turnCounter');
-        turnCounterElement.innerHTML = `<strong>Turn:</strong> ${turnCount}`;
+        turnCounterElement.innerHTML = `<strong>Turn:</strong> ${turnCount} (${turnCount % 2 !== 0 ? 'White' : 'Black'}`;
     }
 
     // Function to update the turn count display

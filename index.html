@@ -27,119 +27,24 @@
     <span class="circle-letter">H</span>
 </div>
 <h1>Can you find a bit of order amongst the chaos?</h1>
-
-<div>
-    <p id="turnCounter"><strong>Turn:</strong> 1</p>
+    <p id="turnCounter"><strong>Turn:</strong> 1 (White)</p>
     <p id="markerCounter"><strong>Markers:</strong> 0/51</p>
     <canvas id="yinshBoard"></canvas>
     <p id="outcome"></p>
-</div>
 <div class="button-container">
     <button id="undoButton">&#8592;</button>
     <button id="randomizeRings">Reset and Randomize Ring Placement</button>
     <button id="redoButton">&#8594;</button>
 </div>
 <div class="content-box">
-    <h2>A. CONTENTS</h2>
-    <p style="margin-left: 25px;"> - 1 game board<br>
-        - 5 white and 5 black rings<br>
-        - 51 markers (white on one side, black on the other side)<br>
-    </p>
-    <h2>B. AIM</h2>
-    <p style="margin-left: 25px;"> You and your opponent start the game each with 5 rings on the board. You may remove a ring each time you form a row of 5 markers with your color face up. You win the game when you have removed 3 of your rings—in other words, to win you must form 3 rows of 5 markers showing your own color.
-    </p>
-    <h2>C. STARTING POSITION</h2>
-    <ol type="1">
-        <li>You begin with an empty board.</li>
-        <li>First, you must bring your rings into play. You and your opponent start putting them on the board, each in turn and one ring at a time. The intersections constitute the playing area. You may put a ring on any intersection you want, including on the edges.</li>
-        <li>When you have both put your 5 rings on the board, you have determined the starting position. (See diagram 1)</li>
-    </ol>
-    <div class="image-container">
-        <figure>
-            <img src="images/diagram1.png"><br>
-            <figcaption><b>Diagram 1:</b><i> both players have placed their 5 rings on the board. Now the game starts.</i></figcaption>
-        </figure>
-    </div>
-    <br>
-    <h2>D. MOVING A RING</h2>
-    <ol type="1">
-        <li>You must decide which of your rings you want to move. Put the marker with your color face up in that ring, so that it occupies the same space as the ring.</li>
-        <li>Then you must move the ring in which you have put a marker according to the following rules:</li>
-    </ol>
-    <ul class="dashed">
-        <li>When moving the ring, you leave the marker on its spot.</li>
-        <li>A ring must always move in a straight line and always to a vacant space.</li>
-        <li>A ring may move over one or more vacant spaces.</li>
-        <li>A ring may jump over one or more markers, regardless of color, as long as they are lined up without interruption. In other words, if you jump over one or more markers, you must always put your ring in the first vacant space directly behind the markers you jumped over. </li>
-        <li>A ring may jump over one or more markers, regardless of color. If you jump over one or more markers, you must always put your ring in the first vacant space directly behind the markers you jumped over.</li>
-        <li>A ring may first move over one or more vacant spaces and continue with a jump over one or more markers. But, as stated above, after jumping over one or more markers, it may not move over any more vacant spaces.</li>
-        <li><b>A ring can only jump over markers, not over rings.</b></li>
-    </ul>
-    <div class="image-container">
-        <figure>
-            <img src="images/diagram2.png"><br>
-            <figcaption><b>Diagram 2:</b><i> the indicated black ring may move to any of the marked spaces.</i></figcaption>
-        </figure>
-    </div>
-    <br>
-    <h2>D. FLIPPING MARKERS</h2>
-    <ol type="1">
-        <li>If you moved your ring over vacant spaces without jumping over any markers, your turn ends when you put the ring on its new spot.</li>
-        <li>If you’ve jumped over one or more markers, <b>you must flip all those markers</b>. This applies to both your own and your opponent’s markers. Thus, each white marker that is jumped becomes black and each black marker becomes white!</li>
-        <li>Do not flip the marker that you’ve put in the ring before you moved; that marker has not been jumped.</li>
-        <li>Markers can only be flipped; they cannot be moved.</li>
-    </ol>
-    <div class="image-container">
-        <figure>
-            <img src="images/diagram3.png"><br>
-            <figcaption><b>Diagram 3:</b><i> the same situation as in Diagram 2, but now after black’s move. The black ring has jumped over 3 white and 2 black markers, so they have been flipped. They now show the opposite color. (Note that the marker that was put in the ring has remained black!)</i></figcaption>
-        </figure>
-    </div>
-    <br>
-    <h2>F. FORMING A ROW / REMOVING A RING</h2>
-    <ol type="1">
-        <li>By moving rings and flipping markers you must try to form a row of 5 markers that show your color. The 5 markers must be adjacent and in a straight line. Rings do not count. <br><b>For the sake of clarity:</b> hereafter, a row of 5 markers that show the same color will simply be referred to as “<b>a row</b>”.</li>
-        <li>If you form a row, you must take the 5 markers from the board and put them back in the pool. </li>
-        <li>After removing a row, you must also remove one of your rings. You must do so because you need a ring to indicate that you’ve formed (and removed) a row. Choose any of your rings and put it on one of the 3 spaces on your side of the board.</li>
-        <figure>
-            <img src="images/diagram4.png"><br>
-            <figcaption><b>Diagram 4:</b><i> Black has formed a row of 5 markers. First, he must put the 5 markers back in the pool. Next he must remove one of his rings and put it in one of the spaces on his side of the board as an indication that he has formed a row.</i></figcaption>
-        </figure>
-        <li>If you form a row of more than 5 markers, you may choose which 5 markers you’ll remove—as long as they form an uninterrupted row.</li>
-        <li>It is possible to form 2 (or more) rows with only one move. If these rows don’t intersect, you must remove both and also remove 2 rings. If they do intersect, you may choose which row you’ll take. After having removed the row of your choice, the other row will not be complete anymore and thus the remaining pieces stay on the board. Now you remove only 1 ring.</li>
-        <li>You may form a row for your opponent. In this case your opponent must remove the row and a ring before he makes his move. He may freely choose which of his rings he’ll take.</li>
-        <li>If you form a row for yourself and a row for your opponent at the same time, then you deal with your own row as normal, and next your opponent must remove his row and a ring as described above.</li>
-        <figure>
-            <img src="images/diagram5.png"><br>
-            <figcaption><i><b>Diagram 5:</b><br/>SITUATION 1: Black may remove either of the two intersecting rows, but no matter which row he takes, the remaining row will not be complete anymore. So this counts as only one row!<br/>
-                SITUATION 2: the black row contains 7 markers. Black may choose which 5 markers he will remove, but he must choose 5 markers that lie next to each other.<br/>
-                SITUATION 3: the row is not complete because the ring does not count as a marker.</i></figcaption>
-        </figure>
-    </ol>
-    <h2>G. END OF THE GAME</h2>
-    <ol type="1">
-        <li>The game ends as soon as a player has removed 3 rings from the board. It means that he has formed 3 rows of 5 markers, so he is the winner.</li>
-        <li>If you make a move that forms both your own and your opponent’s third row, then you win since you may remove your third ring first.</li>
-        <li>If all the markers are placed on the board before a player has won, then the player who removed the most rings wins. If both players have removed the same number of rings, the game ends in a draw.</li>
-    </ol>
-    <h2>H. BLITZ VERSION</h2>
-    <p style="margin-left: 25px;">This is a short and very fast way of playing YINSH. You play exactly as described above, but the aim is simpler: <b>now you must form only one row</b>. So be the first to line up 5 markers of your color and you win! That’s it! Easy, don’t you think?</p>
-    <h2>NOTES:</h2>
+ <h2>NOTES:</h2>
     <ul class="dashed">
         <li>There are 85 points on the board.</li>
-        <li>After 2000 simulations of random play in YINSH, the following plots the branching factor across turns.</li>
+        <li>There are (85 choose 5) * (80 choose 5) possible ways to arrange the ten rings from the first 10 turns. That is <b>788,548,993,504,272 (788 Trillion) combinations</b>.</li>
+        <li>The 123 ways to form a row of five on the board.</li>
         <li>The average branching factor is 40.</li>
         <li>81 is the maximum number of turns possible for YINSH.</li>
     </ul>
-    <br>
-    <div class="image-container">
-        <img src="images/yinsh_branching_factor.png" width="900" height="521"><br>
-    </div>
-    <br>
-    <ul class="dashed">
-        <li>There are (85 choose 5) * (80 choose 5) possible ways to arrange the ten rings from the first 10 turns. That is <b>788,548,993,504,272 (788 Trillion) combinations</b>.</li>
-    </ul>
 </div>
-<br><br>
 </body>
 </html>

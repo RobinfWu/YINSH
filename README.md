@@ -8,8 +8,9 @@ YINSH Yinsh is a two-player abstract-strategy board game on a hexagonal grid con
 3. **Five-in-a-Row** - When there are five markers in a row of the player's color, they are removed off the board, and you pick any one of your rings to remove off the grid and into the scoring section. If your move caused two intersecting five-in-a-rows, you pick any of the two to take off the board. If your move caused two non-intersecting five-in-a-rows of your color, you remove both off the board, and you remove two rings to take off the board. If you caused your opponent to gain five-in-a-row, your opponent must take them off the board at the start of their next turn.
 4. **End** - Whoever takes three of their rings off the board first wins the game. If all 51 markers are used up, the winner is whoever took most of their rings off the board. If they have an equal number of rings, the game ends in a draw.
 
+**Official Rules:** https://www.gipf.com/yinsh/rules/rules.html  
 
-Link: https://robinfwu.github.io/YINSH/
+**Link:** https://robinfwu.github.io/YINSH/
 
 <img width="524" alt="image" src="https://github.com/RobinfWu/YINSH/assets/8204576/67407b0b-e898-4419-a4cf-a207b2971c2e">
 
