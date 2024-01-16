@@ -781,7 +781,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Function to update the turn count display
     function updateTurnDisplay() {
         const turnCounterElement = document.getElementById('turnCounter');
-        turnCounterElement.innerHTML = `<strong>Turn:</strong> ${turnCount} (${turnCount % 2 !== 0 ? 'White' : 'Black'}`;
+        turnCounterElement.innerHTML = `<strong>Turn:</strong> ${turnCount} (${turnCount % 2 !== 0 ? 'White' : 'Black'})`;
     }
 
     // Function to update the turn count display
