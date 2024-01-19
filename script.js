@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     let selectSequence = false;
     let selectSequenceAtStart = false;
+    let botEnabled = false;
     window.toggleBot = toggleBot;
 
     function drawGrid() {
