@@ -775,7 +775,8 @@ document.addEventListener("DOMContentLoaded", function() {
         selectSequence = false;
         selectSequenceAtStart = false;
         document.getElementById('botCheckbox').checked = false;
-
+        botEnabled = false;
+        
         updateTurnDisplay();
         updateMarkerDisplay();
         updateOutcomeDisplay();
