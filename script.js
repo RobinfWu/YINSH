@@ -976,6 +976,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 markersInRow++;
             } else if (board[point[0]][point[1]] === 2 * player) {
                 markersInRow += 0.5;
+            } else if (board[point[0]][point[1]] === -2 * player) {
+                markersInRow -= 0.6;
             } else {
                 lineScore += calculateScore(markersInRow);
                 markersInRow = 0
