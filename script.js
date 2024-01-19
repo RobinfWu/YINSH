@@ -967,6 +967,9 @@ document.addEventListener("DOMContentLoaded", function() {
     function evaluateLines(board, lines) {
         let lineScore = 0;
         for (let line of lines) {
+            if (line.length < 5) {
+                continue;
+            }
             lineScore += evaluateSingleLine(board, line, 1);
             lineScore -= evaluateSingleLine(board, line, -1);
         }
