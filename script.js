@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", function() {
             saveState();
             document.getElementById('undoButton').disabled = false;
             internalBoard[row][col] = ringNumber;
-            rings.push({ x: col * horizontalSpacing + horizontalSpacing / 2 + margin, y: row * verticalSpacing + verticalSpacing / 2 + margin, number: ringNumber});
+            rings.push({ x: col * horizontalSpacing + horizontalSpacing / 2 + margin, y: row * verticalSpacing + verticalSpacing / 2 + margin, row: col, col: row, number: ringNumber});
             turnCount++; // Increment turn count
             updateTurnDisplay(); // Update the turn display
             gameBoard.drawRings(rings);
@@ -310,10 +310,14 @@ document.addEventListener("DOMContentLoaded", function() {
            if (hasSequencesToRemove((currentPlayer))) {
                selectSequence = true;
                gameState = 'selectingSequence';
-               if (botEnabled && turnCount % 2 !== 0) {
-                removeMarkerSequence(clickableMarkers[0].row, clickableMarkers[0].col);
-                removeRingIfClicked(newRow, newCol);
-            }
+               while (botEnabled && turnCount % 2 !== 0 && hasSequencesToRemove(currentPlayer) && gameOver === false) {
+                    removeMarkerSequence(clickableMarkers[0].row, clickableMarkers[0].col);
+                    // Randomly select a ring
+                    const whiteRings = rings.filter(ring => ring.number === 2);
+                    const randomIndex = Math.floor(Math.random() * whiteRings.length);
+                    const selectedBotRing = whiteRings[randomIndex];
+                    removeRingIfClicked(selectedBotRing.col, selectedBotRing.row);
+                 }
            } else if (hasSequencesToRemove(-currentPlayer)) {
                gameState = 'removingSequenceAtStart';
                turnCount++;
