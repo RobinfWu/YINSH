@@ -301,6 +301,8 @@ document.addEventListener("DOMContentLoaded", function() {
            rings.push({
                x: newCol * horizontalSpacing + horizontalSpacing / 2 + margin,
                y: newRow * verticalSpacing + verticalSpacing / 2 + margin,
+               row: newCol,
+               col: newRow,
                number: ringNumber
            });
            flipMarkersAlongPath(selectedRing.row, selectedRing.col, newRow, newCol);
@@ -707,7 +709,6 @@ document.addEventListener("DOMContentLoaded", function() {
         selectedRing = null;
         clickableMarkers = [];
         // Load other relevant game state properties
-        console.log("Loaded markers: " + markers);
         updateTurnDisplay();
         updateMarkerDisplay();
         drawGrid(); // Redraw the board with the loaded state
