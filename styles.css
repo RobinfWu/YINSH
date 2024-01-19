@@ -149,3 +149,7 @@ ul.dashed > li:before {
   width: 100%; /* Full width to contain the image properly */
   box-sizing: border-box; /* Padding is part of width calculation */
 }
+
+#botCheckbox {
+  margin-top: 15px;
+}
